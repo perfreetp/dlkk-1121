@@ -1,0 +1,48 @@
+[
+  {
+    "id": "dl-001",
+    "driverId": "drv-nv-55123",
+    "driverName": "GeForce Game Ready 551.23 WHQL",
+    "version": "551.23",
+    "mirrorId": "m2",
+    "status": "completed",
+    "progress": 100,
+    "size": "1.35 GB",
+    "startTime": "2024-02-10T08:30:00Z",
+    "completedTime": "2024-02-10T08:34:20Z"
+  },
+  {
+    "id": "dl-002",
+    "driverId": "drv-amd-23121",
+    "driverName": "AMD Radeon Software 23.12.1",
+    "version": "23.12.1",
+    "mirrorId": "m1",
+    "status": "downloading",
+    "progress": 62,
+    "size": "1.58 GB",
+    "startTime": "2024-02-11T14:05:00Z"
+  },
+  {
+    "id": "dl-003",
+    "driverId": "drv-nv-54617",
+    "driverName": "GeForce Game Ready 546.17 WHQL",
+    "version": "546.17",
+    "mirrorId": "m1",
+    "status": "failed",
+    "progress": 38,
+    "size": "1.28 GB",
+    "startTime": "2024-02-09T21:12:00Z"
+  },
+  {
+    "id": "dl-004",
+    "driverId": "drv-intel-5078",
+    "driverName": "Intel Arc Graphics Driver 5078",
+    "version": "31.0.101.5078",
+    "mirrorId": "m2",
+    "status": "completed",
+    "progress": 100,
+    "size": "892 MB",
+    "startTime": "2024-02-01T11:00:00Z",
+    "completedTime": "2024-02-01T11:02:45Z"
+  }
+]

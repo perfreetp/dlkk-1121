@@ -1,0 +1,109 @@
+{
+  "compatibility": [
+    { "series": "RTX 40 Series", "brand": "nvidia", "win10": true, "win11": true, "win7": false, "win8": false, "notes": "推荐Windows 11 22H2+以获得最佳光追性能" },
+    { "series": "RTX 30 Series", "brand": "nvidia", "win10": true, "win11": true, "win7": true, "win8": false, "notes": "Win7仅支持有限功能，无DLSS" },
+    { "series": "GTX 16 Series", "brand": "nvidia", "win10": true, "win11": true, "win7": true, "win8": true, "notes": "全系统支持，建议至少Win10 1809" },
+    { "series": "Radeon RX 7000 Series", "brand": "amd", "win10": true, "win11": true, "win7": false, "win8": false, "notes": "需要Windows 10 21H2或更高版本" },
+    { "series": "Radeon RX 6000 Series", "brand": "amd", "win10": true, "win11": true, "win7": true, "win8": false, "notes": "Win7下SAM功能不可用" },
+    { "series": "Arc A Series", "brand": "intel", "win10": true, "win11": true, "win7": false, "win8": false, "notes": "Intel强烈推荐Windows 11以获得完整功能" }
+  ],
+  "bsodIssues": [
+    {
+      "code": "VIDEO_TDR_FAILURE (0x00000116)",
+      "title": "显卡驱动超时重置",
+      "description": "最常见的显卡蓝屏问题，表示显卡驱动在规定时间内未响应，系统尝试重置失败后蓝屏。",
+      "solution": [
+        "卸载当前驱动，使用DDU(Display Driver Uninstaller)在安全模式下彻底清理",
+        "安装经过WHQL认证的稳定版驱动，避免使用Beta版",
+        "降低显卡核心/显存超频频率，恢复默认设置",
+        "检查显卡温度，清理散热片灰尘，必要时更换硅脂",
+        "电源功率不足时更换更高瓦数电源"
+      ],
+      "relatedDrivers": ["drv-nv-55152-beta"]
+    },
+    {
+      "code": "PAGE_FAULT_IN_NONPAGED_AREA (0x00000050)",
+      "title": "驱动内存访问错误",
+      "description": "显卡驱动尝试访问不存在的内存地址时触发，通常是驱动Bug或显存故障。",
+      "solution": [
+        "更新到最新WHQL驱动",
+        "运行Windows内存诊断检测显存问题",
+        "执行sfc /scannow和DISM修复系统文件",
+        "如果是双显卡笔记本，在设备管理器中禁用核显测试"
+      ],
+      "relatedDrivers": []
+    },
+    {
+      "code": "SYSTEM_SERVICE_EXCEPTION (0x0000003B)",
+      "title": "系统服务异常",
+      "description": "显卡驱动内核模式服务执行过程中出现异常，Win10/11升级后较为常见。",
+      "solution": [
+        "完全卸载驱动后重装最新版",
+        "确认Windows系统已更新到最新版本",
+        "检查BIOS是否有更新，升级主板BIOS",
+        "关闭杀毒软件的实时保护后安装驱动"
+      ],
+      "relatedDrivers": ["drv-intel-5078"]
+    },
+    {
+      "code": "IRQL_NOT_LESS_OR_EQUAL (0x0000000A)",
+      "title": "驱动中断请求级别错误",
+      "description": "驱动程序访问了错误的内存地址，可能是驱动冲突导致。",
+      "solution": [
+        "使用DDU卸载所有显卡驱动",
+        "断开其他外设后单独安装显卡驱动",
+        "在事件查看器中查看具体是哪个驱动文件出错",
+        "检查是否安装了Rivatuner/MSI Afterburner等超频软件冲突"
+      ],
+      "relatedDrivers": []
+    },
+    {
+      "code": "DPC_WATCHDOG_VIOLATION (0x00000133)",
+      "title": "DPC看门狗超时",
+      "description": "显卡驱动长时间占用CPU不返回，Win11新安装后常见问题。",
+      "solution": [
+        "更新到最新版显卡驱动，特别是Intel Arc用户",
+        "关闭快速启动功能：电源选项→选择电源按钮功能→更改当前不可用设置→取消勾选快速启动",
+        "在BIOS中禁用CFG Lock选项",
+        "更新主板芯片组驱动"
+      ],
+      "relatedDrivers": ["drv-intel-5078", "drv-amd-23121"]
+    },
+    {
+      "code": "WHEA_UNCORRECTABLE_ERROR (0x00000124)",
+      "title": "硬件错误",
+      "description": "通常是显卡硬件故障，但也可能由驱动和电源引起。",
+      "solution": [
+        "先重新安装驱动排除软件问题",
+        "使用FurMark等压力测试软件检测显卡稳定性",
+        "显卡降到默认频率测试",
+        "更换电源8Pin供电线",
+        "将显卡插到其他机器上交叉验证是否硬件故障"
+      ],
+      "relatedDrivers": []
+    }
+  ],
+  "announcements": [
+    {
+      "id": "ann-1",
+      "title": "NVIDIA 551.23 WHQL驱动已上线",
+      "content": "支持最新RTX 4070 Ti SUPER显卡，优化《黑神话：悟空》游戏性能",
+      "date": "2024-02-01",
+      "type": "success"
+    },
+    {
+      "id": "ann-2",
+      "title": "清华镜像源维护通知",
+      "content": "2月15日 02:00-04:00清华镜像源将进行例行维护，期间可能无法访问",
+      "date": "2024-02-10",
+      "type": "warning"
+    },
+    {
+      "id": "ann-3",
+      "title": "Intel Arc驱动大版本更新",
+      "content": "XeSS升级至1.3，DX12游戏性能平均提升10%，Arc用户建议尽快更新",
+      "date": "2024-01-20",
+      "type": "info"
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+[
+  {
+    "id": "nv-rtx4090",
+    "brand": "nvidia",
+    "series": "RTX 40 Series",
+    "name": "GeForce RTX 4090",
+    "codename": "AD102",
+    "memory": "24GB GDDR6X",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2022-10-12",
+    "driverCount": 12
+  },
+  {
+    "id": "nv-rtx4080",
+    "brand": "nvidia",
+    "series": "RTX 40 Series",
+    "name": "GeForce RTX 4080 SUPER",
+    "codename": "AD103",
+    "memory": "16GB GDDR6X",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2024-01-31",
+    "driverCount": 8
+  },
+  {
+    "id": "nv-rtx4070",
+    "brand": "nvidia",
+    "series": "RTX 40 Series",
+    "name": "GeForce RTX 4070 Ti SUPER",
+    "codename": "AD103",
+    "memory": "16GB GDDR6X",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2024-01-09",
+    "driverCount": 8
+  },
+  {
+    "id": "nv-rtx3090",
+    "brand": "nvidia",
+    "series": "RTX 30 Series",
+    "name": "GeForce RTX 3090",
+    "codename": "GA102",
+    "memory": "24GB GDDR6X",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2020-09-24",
+    "driverCount": 25
+  },
+  {
+    "id": "nv-rtx3080",
+    "brand": "nvidia",
+    "series": "RTX 30 Series",
+    "name": "GeForce RTX 3080",
+    "codename": "GA102",
+    "memory": "10GB GDDR6X",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2020-09-17",
+    "driverCount": 25
+  },
+  {
+    "id": "nv-rtx3060",
+    "brand": "nvidia",
+    "series": "RTX 30 Series",
+    "name": "GeForce RTX 3060",
+    "codename": "GA106",
+    "memory": "12GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2021-02-25",
+    "driverCount": 20
+  },
+  {
+    "id": "nv-gtx1660",
+    "brand": "nvidia",
+    "series": "GTX 16 Series",
+    "name": "GeForce GTX 1660 SUPER",
+    "codename": "TU116",
+    "memory": "6GB GDDR6",
+    "interface": "PCIe 3.0 x16",
+    "releaseDate": "2019-10-29",
+    "driverCount": 30
+  },
+  {
+    "id": "amd-rx7900xtx",
+    "brand": "amd",
+    "series": "Radeon RX 7000 Series",
+    "name": "Radeon RX 7900 XTX",
+    "codename": "Navi 31",
+    "memory": "24GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2022-12-13",
+    "driverCount": 15
+  },
+  {
+    "id": "amd-rx7900xt",
+    "brand": "amd",
+    "series": "Radeon RX 7000 Series",
+    "name": "Radeon RX 7900 XT",
+    "codename": "Navi 31",
+    "memory": "20GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2022-12-13",
+    "driverCount": 15
+  },
+  {
+    "id": "amd-rx7800xt",
+    "brand": "amd",
+    "series": "Radeon RX 7000 Series",
+    "name": "Radeon RX 7800 XT",
+    "codename": "Navi 32",
+    "memory": "16GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2023-09-06",
+    "driverCount": 10
+  },
+  {
+    "id": "amd-rx6800xt",
+    "brand": "amd",
+    "series": "Radeon RX 6000 Series",
+    "name": "Radeon RX 6800 XT",
+    "codename": "Navi 21",
+    "memory": "16GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2020-11-18",
+    "driverCount": 22
+  },
+  {
+    "id": "amd-rx6600",
+    "brand": "amd",
+    "series": "Radeon RX 6000 Series",
+    "name": "Radeon RX 6600 XT",
+    "codename": "Navi 23",
+    "memory": "8GB GDDR6",
+    "interface": "PCIe 4.0 x8",
+    "releaseDate": "2021-08-11",
+    "driverCount": 18
+  },
+  {
+    "id": "intel-arc-a770",
+    "brand": "intel",
+    "series": "Arc A Series",
+    "name": "Intel Arc A770",
+    "codename": "ACM-G10",
+    "memory": "16GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2022-10-12",
+    "driverCount": 20
+  },
+  {
+    "id": "intel-arc-a750",
+    "brand": "intel",
+    "series": "Arc A Series",
+    "name": "Intel Arc A750",
+    "codename": "ACM-G10",
+    "memory": "8GB GDDR6",
+    "interface": "PCIe 4.0 x16",
+    "releaseDate": "2022-10-12",
+    "driverCount": 20
+  },
+  {
+    "id": "intel-arc-a380",
+    "brand": "intel",
+    "series": "Arc A Series",
+    "name": "Intel Arc A380",
+    "codename": "ACM-G11",
+    "memory": "6GB GDDR6",
+    "interface": "PCIe 4.0 x8",
+    "releaseDate": "2022-06-14",
+    "driverCount": 18
+  }
+]

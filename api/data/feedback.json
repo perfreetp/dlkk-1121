@@ -1,0 +1,33 @@
+[
+  {
+    "id": "fb-001",
+    "type": "broken_link",
+    "driverId": "drv-nv-53699",
+    "driverName": "GeForce Game Ready 536.99",
+    "mirrorId": "m3",
+    "mirrorName": "阿里云镜像",
+    "content": "阿里云镜像一直返回404，麻烦检查一下",
+    "status": "processing",
+    "createdAt": "2024-02-05T10:23:00Z",
+    "reply": "已通知运维人员处理，预计2小时内修复"
+  },
+  {
+    "id": "fb-002",
+    "type": "compatibility",
+    "driverId": "drv-intel-5078",
+    "driverName": "Intel Arc Graphics 5078",
+    "content": "安装后Premiere Pro 2024硬件加速用不了，回退到上一版就正常",
+    "rating": 2,
+    "status": "pending",
+    "createdAt": "2024-02-08T15:42:00Z"
+  },
+  {
+    "id": "fb-003",
+    "type": "install_issue",
+    "content": "驱动安装到一半提示\"NVIDIA安装程序失败\"，重试多次都不行",
+    "contact": "user_wang@163.com",
+    "status": "resolved",
+    "createdAt": "2024-01-30T09:15:00Z",
+    "reply": "建议使用DDU在安全模式下彻底卸载旧驱动后再安装，已为用户发送详细教程邮件"
+  }
+]
