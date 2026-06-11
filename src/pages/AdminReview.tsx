@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Settings, Database, CheckCircle2, Clock, XCircle, HardDrive, MessageSquare,
   Link as LinkIcon, Power, Eye, X, Pencil, Plus, Trash2, Gauge, Link2Off, Star, Shield,
+  RefreshCw, AlertTriangle,
 } from 'lucide-react';
 import Badge from '@/components/Badge';
 import DataTable, { DataColumn } from '@/components/DataTable';
@@ -45,6 +46,9 @@ export default function AdminReview() {
   const [editMirror, setEditMirror] = useState<MirrorEditData | null>(null);
   const [addMirror, setAddMirror] = useState<MirrorAddData | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [speedTesting, setSpeedTesting] = useState(false);
+  const [speedTestResults, setSpeedTestResults] = useState<any[]>([]);
+  const [showSpeedTestPanel, setShowSpeedTestPanel] = useState(false);
 
   const showMsg = (type: 'success' | 'error', text: string) => {
     setSaveMsg({ type, text });
@@ -149,6 +153,74 @@ export default function AdminReview() {
     } catch (e) {
       console.error(e);
       showMsg('error', '添加失败，请检查输入');
+    }
+  };
+
+  const handleSpeedTest = async () => {
+    const urls: string[] = [];
+    mirrors.forEach(m => {
+      urls.push(m.url);
+      if (m.backupUrls) {
+        m.backupUrls.forEach(b => {
+          if (typeof b === 'string') urls.push(b as string);
+          else urls.push(b.url);
+        });
+      }
+    });
+    if (urls.length === 0) return;
+    setSpeedTesting(true);
+    setShowSpeedTestPanel(true);
+    setSpeedTestResults([]);
+    try {
+      const results = await api.admin.speedtestMirrors(urls) as any[];
+      setSpeedTestResults(results);
+      showMsg('success', `测速完成，共 ${results.length} 个线路`);
+    } catch (e) {
+      console.error(e);
+      showMsg('error', '测速失败');
+    } finally {
+      setSpeedTesting(false);
+    }
+  };
+
+  const getSpeedTestGroups = () => {
+    const ok = speedTestResults.filter(r => r.status === 'ok');
+    const slow = speedTestResults.filter(r => r.status === 'slow');
+    const unreachable = speedTestResults.filter(r => r.status === 'unreachable');
+    return { ok, slow, unreachable };
+  };
+
+  const handleApplySpeedTest = async () => {
+    if (speedTestResults.length === 0) return;
+    const updates: any[] = [];
+    const resultMap: Record<string, any> = {};
+    speedTestResults.forEach(r => { resultMap[r.url] = r; });
+
+    mirrors.forEach(m => {
+      const mainResult = resultMap[m.url];
+      if (mainResult) {
+        updates.push({
+          driverId: m.driverId,
+          mirrorId: m.mirrorId,
+          speed: mainResult.speed || 0,
+          enabled: mainResult.status !== 'unreachable',
+        });
+      }
+    });
+
+    if (updates.length === 0) {
+      showMsg('error', '没有可应用的结果');
+      return;
+    }
+
+    try {
+      await api.admin.batchUpdateMirrors(updates);
+      showMsg('success', `已应用 ${updates.length} 个镜像的测速结果`);
+      setShowSpeedTestPanel(false);
+      reload();
+    } catch (e) {
+      console.error(e);
+      showMsg('error', '应用失败');
     }
   };
 
@@ -321,15 +393,113 @@ export default function AdminReview() {
       {activeTab === 'feedback' && <DataTable columns={feedbackColumns} data={feedbackList} rowKey="id" />}
       {activeTab === 'mirrors' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div className="text-sm text-slate-400">
               共 <span className="text-neon-cyan font-medium">{mirrors.length}</span> 个镜像源
               （{mirrors.filter(m => m.enabled).length} 启用 / {mirrors.filter(m => !m.enabled).length} 禁用）
+              {speedTestResults.length > 0 && (
+                <span className="ml-3 text-whql">
+                  已测速 {speedTestResults.length} 条线路
+                </span>
+              )}
             </div>
-            <button onClick={openAddMirror} className="btn-primary !py-2 !px-3 text-sm">
-              <Plus className="w-4 h-4" />新增镜像源
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSpeedTest}
+                disabled={speedTesting}
+                className="btn-ghost !py-2 !px-3 text-sm"
+              >
+                {speedTesting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />测速中...
+                  </>
+                ) : (
+                  <>
+                    <Gauge className="w-4 h-4" />批量测速
+                  </>
+                )}
+              </button>
+              {speedTestResults.length > 0 && (
+                <button
+                  onClick={() => setShowSpeedTestPanel(!showSpeedTestPanel)}
+                  className={cn(
+                    'btn-ghost !py-2 !px-3 text-sm',
+                    showSpeedTestPanel && 'text-neon-cyan border-neon-cyan/30 bg-neon-cyan/10'
+                  )}
+                >
+                  {showSpeedTestPanel ? '隐藏结果' : '查看结果'}
+                </button>
+              )}
+              <button onClick={openAddMirror} className="btn-primary !py-2 !px-3 text-sm">
+                <Plus className="w-4 h-4" />新增镜像源
+              </button>
+            </div>
           </div>
+
+          {showSpeedTestPanel && speedTestResults.length > 0 && (
+            <div className="card p-4 mb-4 border-neon-cyan/20 bg-bg-800/50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Gauge className="w-5 h-5 text-neon-cyan" />
+                  <span className="font-semibold text-white">测速结果</span>
+                </div>
+                <button onClick={handleApplySpeedTest} className="btn-primary !py-1.5 !px-3 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />应用到镜像配置
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-3 rounded-lg bg-whql/5 border border-whql/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-whql" />
+                    <span className="text-sm font-medium text-whql">正常线路</span>
+                    <span className="ml-auto text-lg font-bold text-whql">{getSpeedTestGroups().ok.length}</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {getSpeedTestGroups().ok.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-mono truncate max-w-[70%]">{r.url.replace(/^https?:\/\//, '').split('/')[0]}</span>
+                        <span className="text-whql font-mono">{formatSpeed(r.speed)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-warn/5 border border-warn/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-warn" />
+                    <span className="text-sm font-medium text-warn">慢速线路</span>
+                    <span className="ml-auto text-lg font-bold text-warn">{getSpeedTestGroups().slow.length}</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {getSpeedTestGroups().slow.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-mono truncate max-w-[70%]">{r.url.replace(/^https?:\/\//, '').split('/')[0]}</span>
+                        <span className="text-warn font-mono">{formatSpeed(r.speed)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-danger/5 border border-danger/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="w-4 h-4 text-danger" />
+                    <span className="text-sm font-medium text-danger">不可访问</span>
+                    <span className="ml-auto text-lg font-bold text-danger">{getSpeedTestGroups().unreachable.length}</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {getSpeedTestGroups().unreachable.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 font-mono truncate max-w-[70%] line-through">{r.url.replace(/^https?:\/\//, '').split('/')[0]}</span>
+                        <span className="text-danger text-[10px]">连接失败</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-3">
+                点击"应用到镜像配置"将更新所有主镜像源的测速结果，并自动禁用不可访问的线路。备用地址请在编辑弹窗中手动调整。
+              </p>
+            </div>
+          )}
+
           <DataTable columns={mirrorColumns} data={mirrors} rowKey="id" />
         </div>
       )}

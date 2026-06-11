@@ -154,4 +154,69 @@ router.post('/mirrors/add', (req: Request, res: Response) => {
   res.json(drivers[dIdx]);
 });
 
+interface SpeedTestResult {
+  url: string;
+  speed?: number;
+  status: 'ok' | 'slow' | 'unreachable';
+  latency?: number;
+}
+
+router.post('/mirrors/speedtest', (req: Request, res: Response) => {
+  const { urls } = req.body;
+  if (!Array.isArray(urls) || urls.length === 0) {
+    res.status(400).json({ error: 'urls must be a non-empty array' });
+    return;
+  }
+  const results: SpeedTestResult[] = urls.map(url => {
+    const rand = Math.random();
+    if (rand < 0.15) {
+      return { url: String(url), status: 'unreachable', latency: undefined, speed: undefined };
+    } else if (rand < 0.3) {
+      const speed = Math.floor(Math.random() * 80) + 10;
+      const latency = Math.floor(Math.random() * 500) + 200;
+      return { url: String(url), status: 'slow', speed, latency };
+    } else {
+      const speed = Math.floor(Math.random() * 4000) + 500;
+      const latency = Math.floor(Math.random() * 150) + 20;
+      return { url: String(url), status: 'ok', speed, latency };
+    }
+  });
+  const delay = Math.min(urls.length * 200 + 500, 3000);
+  setTimeout(() => { res.json(results); }, delay);
+});
+
+router.post('/mirrors/batch-update', (req: Request, res: Response) => {
+  const { updates } = req.body;
+  if (!Array.isArray(updates)) {
+    res.status(400).json({ error: 'updates must be an array' });
+    return;
+  }
+  const drivers = getDrivers();
+  let changed = false;
+  updates.forEach((u: any) => {
+    const { driverId, mirrorId, backupIndex, speed, enabled } = u;
+    const dIdx = drivers.findIndex((d: Driver) => d.id === driverId);
+    if (dIdx === -1) return;
+    const mIdx = drivers[dIdx].mirrors.findIndex(m => m.id === mirrorId);
+    if (mIdx === -1) return;
+    if (backupIndex !== undefined && backupIndex !== null && drivers[dIdx].mirrors[mIdx].backupUrls) {
+      const bu = drivers[dIdx].mirrors[mIdx].backupUrls![backupIndex];
+      if (bu) {
+        changed = true;
+      }
+    } else {
+      if (speed !== undefined) {
+        drivers[dIdx].mirrors[mIdx].speed = speed;
+        changed = true;
+      }
+      if (enabled !== undefined) {
+        (drivers[dIdx].mirrors[mIdx] as any).enabled = enabled;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveDrivers(drivers);
+  res.json({ success: true, updated: updates.length });
+});
+
 export default router;

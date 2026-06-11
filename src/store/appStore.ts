@@ -18,13 +18,14 @@ interface AppState {
   toggleFavorite: (driverId: string) => Promise<void>;
   fetchDownloads: () => Promise<void>;
   enrichDownloads: () => Promise<void>;
-  startDownload: (driver: Driver, mirrorId: string) => Promise<void>;
+  startDownload: (driver: Driver, optionId: string) => Promise<void>;
   batchStartDownload: (gpuIds: string[]) => Promise<number>;
   updateDownloadProgress: (id: string, progress: number, status?: DownloadRecord['status']) => Promise<void>;
   pauseDownload: (id: string) => Promise<void>;
   resumeDownload: (id: string) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
   retryDownload: (id: string) => Promise<void>;
+  verifyDownload: (id: string) => void;
   moveDownloadTop: (id: string) => void;
   moveDownloadBottom: (id: string) => void;
   toggleDriverSelection: (driverId: string) => void;
@@ -95,37 +96,55 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) { console.error(e); }
   },
 
-  startDownload: async (driver: Driver, mirrorId: string) => {
+  startDownload: async (driver: Driver, optionId: string) => {
     try {
-      const mirror = driver.mirrors.find(m => m.id === mirrorId);
+      let mirrorId = optionId;
+      let backupIndex: number | undefined;
+      const bkMatch = optionId.match(/^(.+)-bk-(\d+)$/);
+      if (bkMatch) {
+        mirrorId = bkMatch[1];
+        backupIndex = parseInt(bkMatch[2], 10);
+      }
+      const mirror = driver.mirrors.find(function(m) { return m.id === mirrorId; });
+      const isBackup = backupIndex !== undefined;
+      const backupUrl = isBackup && mirror?.backupUrls ? mirror.backupUrls[backupIndex!] : null;
+      const mirrorName = isBackup && backupUrl
+        ? `${mirror?.name} · ${backupUrl.label === 'primary' ? '主用备用' : '备用线路'}`
+        : mirror?.name;
+      const mirrorUrl = isBackup && backupUrl ? backupUrl.url : mirror?.url;
+      const mirrorLabel = isBackup ? 'backup' : (mirror?.name && (mirror.name.toLowerCase().includes('官网') || mirror.name.toLowerCase().includes('官方') || mirror.name.toLowerCase().includes('nvidia') || mirror.name.toLowerCase().includes('amd') || mirror.name.toLowerCase().includes('intel')) ? 'official' : 'mirror');
+
       const record = await api.downloads.create({
         driverId: driver.id,
         driverName: driver.gpuNames?.[0] ? `${driver.gpuNames[0]} ${driver.version}` : driver.version,
         version: driver.version,
         mirrorId,
-        mirrorName: mirror?.name,
-        mirrorUrl: mirror?.url,
+        mirrorName,
+        mirrorUrl,
+        mirrorLabel,
         gpuNames: driver.gpuNames,
         md5: driver.md5,
         sha256: driver.sha256,
         installNotes: DEFAULT_INSTALL_NOTES,
         osSupport: driver.osSupport,
         size: driver.fileSize,
+        verifyStatus: 'pending',
       }) as DownloadRecord;
       set({ downloads: [record, ...get().downloads] });
-      const simulate = (id: string, baseProgress = 0) => {
-        const current = get().downloads.find(d => d.id === id);
+      const simulate = function(id: string, baseProgress: number) {
+        const current = get().downloads.find(function(d) { return d.id === id; });
         if (!current || current.status !== 'downloading') return;
         const nextProgress = Math.min(baseProgress + Math.random() * 12 + 5, 100);
         if (nextProgress >= 100) {
           get().updateDownloadProgress(id, 100, 'completed');
+          get().verifyDownload(id);
         } else {
           const rounded = Math.round(nextProgress);
           get().updateDownloadProgress(id, rounded);
-          setTimeout(() => simulate(id, rounded), 1200);
+          setTimeout(function() { simulate(id, rounded); }, 1200);
         }
       };
-      setTimeout(() => simulate(record.id), 1000);
+      setTimeout(function() { simulate(record.id, 0); }, 1000);
     } catch (e) { console.error(e); }
   },
 
@@ -206,15 +225,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       const updated = await api.downloads.update(id, {
         status: 'downloading',
         progress: 0,
+        verifyStatus: 'pending',
+        verifyError: undefined,
       }) as DownloadRecord;
       const nextList = get().downloads.map(function(d) { return d.id === id ? updated : d; });
       set({ downloads: nextList });
-      const simulate = (rid: string, base: number) => {
+      const simulate = function(rid: string, base: number) {
         const cur = get().downloads.find(function(d) { return d.id === rid; });
         if (!cur || cur.status !== 'downloading') return;
         const nextProgress = Math.min(base + Math.random() * 12 + 5, 100);
         if (nextProgress >= 100) {
           get().updateDownloadProgress(rid, 100, 'completed');
+          get().verifyDownload(rid);
         } else {
           const rounded = Math.round(nextProgress);
           get().updateDownloadProgress(rid, rounded);
@@ -225,24 +247,61 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) { console.error(e); }
   },
 
+  verifyDownload: (id: string) => {
+    const current = get().downloads.find(function(d) { return d.id === id; });
+    if (!current || current.status !== 'completed') return;
+    const updateLocal = function(patch: Partial<DownloadRecord>) {
+      const nextList = get().downloads.map(function(d) { return d.id === id ? { ...d, ...patch } : d; });
+      set({ downloads: nextList });
+    };
+    updateLocal({ verifyStatus: 'verifying' });
+    api.downloads.update(id, { verifyStatus: 'verifying' }).catch(function() {});
+    setTimeout(function() {
+      const cur = get().downloads.find(function(d) { return d.id === id; });
+      if (!cur) return;
+      const md5Match = cur.md5 && Math.random() > 0.1;
+      const sha256Match = cur.sha256 && Math.random() > 0.12;
+      const passed = md5Match && sha256Match;
+      const errors: string[] = [];
+      if (!md5Match) errors.push('MD5 校验不匹配');
+      if (!sha256Match) errors.push('SHA256 校验不匹配');
+      const result: Partial<DownloadRecord> = {
+        verifyStatus: passed ? 'passed' : 'failed',
+        verifyError: passed ? undefined : errors.join('、'),
+      };
+      updateLocal(result);
+      api.downloads.update(id, result).catch(function() {});
+    }, 1500);
+  },
+
   moveDownloadTop: (id: string) => {
     const list = get().downloads;
-    const idx = list.findIndex(function(d) { return d.id === id; });
+    const active = list.filter(function(d) { return d.status !== 'completed'; });
+    const others = list.filter(function(d) { return d.status === 'completed'; });
+    const idx = active.findIndex(function(d) { return d.id === id; });
     if (idx <= 0) return;
-    const item = list[idx];
-    const next = list.filter(function(d) { return d.id !== id; });
-    next.unshift(item);
+    const item = active[idx];
+    const nextActive = active.filter(function(d) { return d.id !== id; });
+    nextActive.unshift(item);
+    const next = [...nextActive, ...others];
     set({ downloads: next });
+    const ids = nextActive.map(function(d) { return d.id; });
+    api.downloads.reorder(ids).catch(function() {});
   },
 
   moveDownloadBottom: (id: string) => {
     const list = get().downloads;
-    const idx = list.findIndex(function(d) { return d.id === id; });
-    if (idx < 0 || idx === list.length - 1) return;
-    const item = list[idx];
-    const next = list.filter(function(d) { return d.id !== id; });
-    next.push(item);
+    const active = list.filter(function(d) { return d.status !== 'completed'; });
+    const others = list.filter(function(d) { return d.status === 'completed'; });
+    const idx = active.findIndex(function(d) { return d.id === id; });
+    if (idx < 0 || idx === active.length - 1) return;
+    const item = active[idx];
+    const nextActive = active.filter(function(d) { return d.id !== id; });
+    nextActive.push(item);
+    const next = [...nextActive, ...others];
     set({ downloads: next });
+    const ids = nextActive.map(function(d) { return d.id; });
+    api.downloads.reorder(ids).catch(function() {});
   },
 
   toggleDriverSelection: (driverId: string) => {

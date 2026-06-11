@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   Download, Inbox, Play, RotateCcw, Trash2, Home, AlertTriangle, Clock,
-  CheckCircle, XCircle, Pause, ChevronDown, ChevronUp, ExternalLink,
+  CheckCircle2, XCircle, Pause, ChevronDown, ChevronUp, ExternalLink,
   Hash, HardDrive, Monitor, AlertCircle, Copy, Check, Server,
-  ArrowUpToLine, ArrowDownToLine, ListOrdered
+  ArrowUpToLine, ArrowDownToLine, ListOrdered, Shield, RefreshCw
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { api } from '@/utils/api';
@@ -19,7 +19,7 @@ const FILTER_TABS: { key: FilterTab; label: string; icon: any }[] = [
   { key: 'all', label: '全部', icon: Download },
   { key: 'downloading', label: '下载中', icon: Clock },
   { key: 'paused', label: '已暂停', icon: Pause },
-  { key: 'completed', label: '已完成', icon: CheckCircle },
+  { key: 'completed', label: '已完成', icon: CheckCircle2 },
   { key: 'failed', label: '失败', icon: XCircle },
   { key: 'canceled', label: '已取消', icon: XCircle },
 ];
@@ -35,7 +35,7 @@ const QUEUE_STATUS_ORDER: Record<string, number> = {
 export default function DownloadHistory() {
   const {
     downloads, fetchDownloads, enrichDownloads, updateDownloadProgress,
-    pauseDownload, resumeDownload, cancelDownload, retryDownload,
+    pauseDownload, resumeDownload, cancelDownload, retryDownload, verifyDownload,
     moveDownloadTop, moveDownloadBottom,
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
@@ -221,6 +221,68 @@ export default function DownloadHistory() {
               </div>
             )}
 
+            {item.status === 'completed' && item.verifyStatus && item.verifyStatus !== 'skipped' && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1.5 flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> 文件校验
+                </div>
+                <div className={cn(
+                  'flex items-center gap-2 p-2.5 rounded-lg border',
+                  item.verifyStatus === 'passed' && 'bg-whql/5 border-whql/30',
+                  item.verifyStatus === 'failed' && 'bg-danger/5 border-danger/30',
+                  item.verifyStatus === 'verifying' && 'bg-neon-cyan/5 border-neon-cyan/30',
+                  item.verifyStatus === 'pending' && 'bg-bg-700/50 border-white/10'
+                )}>
+                  {item.verifyStatus === 'passed' && (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-whql flex-shrink-0" />
+                      <span className="text-sm text-whql font-medium">校验通过</span>
+                      <span className="text-xs text-slate-500 ml-auto">MD5 · SHA256 均匹配</span>
+                    </>
+                  )}
+                  {item.verifyStatus === 'failed' && (
+                    <>
+                      <XCircle className="w-4 h-4 text-danger flex-shrink-0" />
+                      <div>
+                        <span className="text-sm text-danger font-medium">校验失败</span>
+                        <p className="text-xs text-slate-500 mt-0.5">{item.verifyError || '文件完整性校验未通过'}</p>
+                      </div>
+                      <button onClick={() => retryDownload(item.id)} className="ml-auto btn-primary !py-1 !px-2 text-xs">
+                        <RotateCcw className="w-3 h-3" />重新下载
+                      </button>
+                    </>
+                  )}
+                  {item.verifyStatus === 'verifying' && (
+                    <>
+                      <RefreshCw className="w-4 h-4 text-neon-cyan animate-spin flex-shrink-0" />
+                      <span className="text-sm text-neon-cyan font-medium">校验中...</span>
+                      <span className="text-xs text-slate-500 ml-auto">正在计算文件哈希</span>
+                    </>
+                  )}
+                  {item.verifyStatus === 'pending' && (
+                    <>
+                      <Clock className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                      <span className="text-sm text-slate-400">等待校验</span>
+                      <button onClick={() => verifyDownload(item.id)} className="ml-auto btn-ghost !py-1 !px-2 text-xs">
+                        <RefreshCw className="w-3 h-3" />立即校验
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {item.status === 'failed' && item.failReason && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1.5 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> 失败原因
+                </div>
+                <div className="p-2.5 rounded-lg bg-danger/5 border border-danger/30">
+                  <p className="text-sm text-danger">{item.failReason}</p>
+                </div>
+              </div>
+            )}
+
             {installNotes.length > 0 && (
               <div>
                 <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
@@ -380,10 +442,25 @@ export default function DownloadHistory() {
                       </div>
 
                       <div className="flex-1 w-full md:w-auto">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <span className={cn('badge', statusInfo.color)}>
                             {statusInfo.label}
                           </span>
+                          {item.status === 'completed' && item.verifyStatus === 'passed' && (
+                            <span className="badge !bg-whql/15 !text-whql !border-whql/30 inline-flex items-center gap-1" title="文件校验通过">
+                              <CheckCircle2 className="w-3 h-3" /> 校验通过
+                            </span>
+                          )}
+                          {item.status === 'completed' && item.verifyStatus === 'failed' && (
+                            <span className="badge !bg-danger/15 !text-danger !border-danger/30 inline-flex items-center gap-1" title="文件校验失败">
+                              <XCircle className="w-3 h-3" /> 校验失败
+                            </span>
+                          )}
+                          {item.status === 'completed' && item.verifyStatus === 'verifying' && (
+                            <span className="badge !bg-neon-cyan/15 !text-neon-cyan !border-neon-cyan/30 inline-flex items-center gap-1" title="正在校验文件">
+                              <RefreshCw className="w-3 h-3 animate-spin" /> 校验中
+                            </span>
+                          )}
                           {item.status === 'downloading' && (
                             <span className="text-sm text-neon-cyan font-mono">{speed}</span>
                           )}

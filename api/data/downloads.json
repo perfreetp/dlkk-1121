@@ -10,7 +10,8 @@
     "status": "paused",
     "startTime": "2026-06-11T09:48:05.021Z",
     "pausedTime": "2026-06-11T10:12:42.071Z",
-    "pausedProgress": 63
+    "pausedProgress": 63,
+    "queueOrder": 0
   },
   {
     "id": "dl-001",
@@ -22,7 +23,8 @@
     "progress": 100,
     "size": "1.35 GB",
     "startTime": "2024-02-10T08:30:00Z",
-    "completedTime": "2024-02-10T08:34:20Z"
+    "completedTime": "2024-02-10T08:34:20Z",
+    "queueOrder": 1
   },
   {
     "id": "dl-002",
@@ -33,7 +35,8 @@
     "status": "downloading",
     "progress": 62,
     "size": "1.58 GB",
-    "startTime": "2024-02-11T14:05:00Z"
+    "startTime": "2024-02-11T14:05:00Z",
+    "queueOrder": 2
   },
   {
     "id": "dl-003",
@@ -44,7 +47,8 @@
     "status": "failed",
     "progress": 38,
     "size": "1.28 GB",
-    "startTime": "2024-02-09T21:12:00Z"
+    "startTime": "2024-02-09T21:12:00Z",
+    "queueOrder": 3
   },
   {
     "id": "dl-004",
@@ -56,6 +60,7 @@
     "progress": 100,
     "size": "892 MB",
     "startTime": "2024-02-01T11:00:00Z",
-    "completedTime": "2024-02-01T11:02:45Z"
+    "completedTime": "2024-02-01T11:02:45Z",
+    "queueOrder": 4
   }
 ]

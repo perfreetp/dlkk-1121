@@ -50,6 +50,8 @@ export interface Driver {
 
 export type DownloadStatus = 'completed' | 'downloading' | 'failed' | 'canceled' | 'paused';
 
+export type VerifyStatus = 'pending' | 'verifying' | 'passed' | 'failed' | 'skipped';
+
 export interface DownloadRecord {
   id: string;
   driverId: string;
@@ -58,6 +60,7 @@ export interface DownloadRecord {
   mirrorId: string;
   mirrorName?: string;
   mirrorUrl?: string;
+  mirrorLabel?: 'official' | 'mirror' | 'backup';
   gpuNames?: string[];
   md5?: string;
   sha256?: string;
@@ -70,6 +73,10 @@ export interface DownloadRecord {
   completedTime?: string;
   pausedTime?: string;
   pausedProgress?: number;
+  queueOrder: number;
+  verifyStatus?: VerifyStatus;
+  verifyError?: string;
+  failReason?: string;
 }
 
 export type FeedbackType = 'broken_link' | 'install_issue' | 'performance' | 'compatibility' | 'other';

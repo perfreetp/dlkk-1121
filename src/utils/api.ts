@@ -38,6 +38,8 @@ export const api = {
     create: (data: any) => request('/downloads', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       request(`/downloads/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    reorder: (ids: string[]) =>
+      request('/downloads/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
     delete: (id: string) => request(`/downloads/${id}`, { method: 'DELETE' }),
   },
   feedback: {
@@ -65,6 +67,16 @@ export const api = {
       request('/admin/mirrors/add', {
         method: 'POST',
         body: JSON.stringify({ driverId, ...data }),
+      }),
+    speedtestMirrors: (urls: string[]) =>
+      request('/admin/mirrors/speedtest', {
+        method: 'POST',
+        body: JSON.stringify({ urls }),
+      }),
+    batchUpdateMirrors: (updates: any[]) =>
+      request('/admin/mirrors/batch-update', {
+        method: 'POST',
+        body: JSON.stringify({ updates }),
       }),
   },
   favorites: {
