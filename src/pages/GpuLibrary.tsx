@@ -9,6 +9,7 @@ import {
   Download,
   Trash2,
   ArrowUpDown,
+  CheckCircle,
 } from 'lucide-react';
 import type { GpuModel, SortOption, OrderOption } from '@/types';
 import { api } from '@/utils/api';
@@ -40,7 +41,8 @@ export default function GpuLibrary() {
   });
   const [sortOpen, setSortOpen] = useState(false);
 
-  const { selectedDriverIds, toggleDriverSelection, clearSelection, batchSelect } = useAppStore();
+  const { selectedDriverIds, toggleDriverSelection, clearSelection, batchSelect, batchStartDownload } = useAppStore();
+  const [batchSuccess, setBatchSuccess] = useState(0);
 
   useEffect(() => {
     api.gpus.series().then((s) => setSeriesOptions(s as SeriesOption[]));
@@ -72,8 +74,11 @@ export default function GpuLibrary() {
     }
   };
 
-  const handleBatchDownload = () => {
-    console.log('批量下载:', selectedDriverIds);
+  const handleBatchDownload = async () => {
+    const count = await batchStartDownload(selectedDriverIds);
+    setBatchSuccess(count);
+    clearSelection();
+    setTimeout(() => setBatchSuccess(0), 3000);
   };
 
   return (
@@ -148,6 +153,12 @@ export default function GpuLibrary() {
           </aside>
 
           <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            {batchSuccess > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-whql/10 border border-whql/30 flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-whql flex-shrink-0" />
+                <span className="text-whql text-sm">已成功将 <strong>{batchSuccess}</strong> 个驱动加入下载队列，可在 <a href="/downloads" className="underline hover:text-white">下载记录</a> 中查看</span>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-slate-400">

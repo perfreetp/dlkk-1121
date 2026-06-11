@@ -10,6 +10,7 @@ interface AppState {
   toggleFavorite: (driverId: string) => Promise<void>;
   fetchDownloads: () => Promise<void>;
   startDownload: (driver: Driver, mirrorId: string) => Promise<void>;
+  batchStartDownload: (gpuIds: string[]) => Promise<number>;
   updateDownloadProgress: (id: string, progress: number, status?: DownloadRecord['status']) => Promise<void>;
   toggleDriverSelection: (driverId: string) => void;
   clearSelection: () => void;
@@ -98,4 +99,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearSelection: () => set({ selectedDriverIds: [] }),
 
   batchSelect: (ids: string[]) => set({ selectedDriverIds: ids }),
+
+  batchStartDownload: async (gpuIds: string[]): Promise<number> => {
+    let addedCount = 0;
+    try {
+      const allDrivers = await api.drivers.list({ status: 'approved' }) as Driver[];
+      for (const gpuId of gpuIds) {
+        const driversForGpu = allDrivers.filter(d => d.gpuIds.includes(gpuId) && d.status === 'approved');
+        if (driversForGpu.length === 0) continue;
+        const latestDriver = driversForGpu.sort((a, b) =>
+          new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+        )[0];
+        const enabledMirror = latestDriver.mirrors.find(m => m.enabled);
+        if (!enabledMirror) continue;
+        const existing = get().downloads.find(d => d.driverId === latestDriver.id && d.status !== 'failed');
+        if (existing) continue;
+        await get().startDownload(latestDriver, enabledMirror.id);
+        addedCount++;
+      }
+    } catch (e) { console.error(e); }
+    return addedCount;
+  },
 }));

@@ -22,6 +22,7 @@ const mockReviews = [
 export default function DriverDetail() {
   const { id } = useParams<{ id: string }>();
   const [driver, setDriver] = useState<Driver | null>(null);
+  const [historyDrivers, setHistoryDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMirror, setSelectedMirror] = useState('');
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -38,10 +39,18 @@ export default function DriverDetail() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    api.drivers.get(id).then((d) => {
-      setDriver(d as Driver);
-      const m = (d as Driver).mirrors.filter((x) => x.enabled);
+    api.drivers.get(id).then(async (d) => {
+      const driverData = d as Driver;
+      setDriver(driverData);
+      const m = driverData.mirrors.filter((x) => x.enabled);
       if (m.length > 0) setSelectedMirror(m[0].id);
+      if (driverData.gpuIds.length > 0) {
+        const history = await api.drivers.byGpu(driverData.gpuIds[0]) as Driver[];
+        const sortedHistory = history
+          .filter(h => h.status === 'approved')
+          .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+        setHistoryDrivers(sortedHistory);
+      }
     }).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
@@ -110,7 +119,7 @@ export default function DriverDetail() {
       <nav className="flex items-center gap-2 text-sm text-slate-400 mb-6">
         <Link to="/" className="hover:text-neon-cyan transition-colors flex items-center gap-1"><Home className="w-4 h-4" /> 首页</Link>
         <ChevronRight className="w-4 h-4" />
-        <Link to="/drivers" className="hover:text-neon-cyan transition-colors">驱动列表</Link>
+        <Link to="/gpus" className="hover:text-neon-cyan transition-colors">显卡型号库</Link>
         <ChevronRight className="w-4 h-4" />
         <span className="text-white">{driver.version}</span>
       </nav>
@@ -208,18 +217,18 @@ export default function DriverDetail() {
       </div>
 
       <div className="card p-6 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">历史版本</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">历史版本 ({historyDrivers.length})</h2>
         <div className="relative">
           <div className="absolute left-3 top-0 bottom-0 w-px bg-white/10" />
           <div className="space-y-4">
-            {[driver].map((d, idx) => {
-              const isCurrent = idx === 0;
+            {historyDrivers.map((d) => {
+              const isCurrent = d.id === driver?.id;
               return (
                 <div key={d.id} className="relative pl-10">
                   <div className={cn('absolute left-0 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center', d.isWHQL ? 'bg-whql/20 border-whql shadow-glow-green' : 'bg-bg-700 border-slate-500', isCurrent && 'ring-2 ring-neon-cyan/50')}>
                     <div className={cn('w-2 h-2 rounded-full', d.isWHQL ? 'bg-whql' : 'bg-slate-500')} />
                   </div>
-                  <div className={cn('p-4 rounded-lg border transition-colors', isCurrent ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-bg-700/30 border-white/5')}>
+                  <div className={cn('p-4 rounded-lg border transition-colors', isCurrent ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-bg-700/30 border-white/5 hover:border-neon-cyan/20')}>
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-white font-semibold">{d.version}</span>
@@ -228,7 +237,13 @@ export default function DriverDetail() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-slate-400">{formatDate(d.releaseDate)}</span>
-                        {!isCurrent && <Link to={`/driver/${d.id}`} className="btn-ghost px-3 py-1 text-xs"><Download className="w-3 h-3" /> 下载</Link>}
+                        {isCurrent ? (
+                          <span className="text-xs text-neon-cyan">本页</span>
+                        ) : (
+                          <Link to={`/driver/${d.id}`} className="btn-ghost px-3 py-1 text-xs hover:!border-neon-cyan/30 hover:!bg-neon-cyan/5">
+                            <Download className="w-3 h-3" /> 查看
+                          </Link>
+                        )}
                       </div>
                     </div>
                     <div className="text-sm text-slate-400">{d.fileSize} · {formatDownloadCount(d.downloadCount)} 次下载</div>

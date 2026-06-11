@@ -1,13 +1,30 @@
 [
   {
     "id": "drv-nv-55123",
-    "gpuIds": ["nv-rtx4090", "nv-rtx4080", "nv-rtx4070", "nv-rtx3090", "nv-rtx3080", "nv-rtx3060"],
-    "gpuNames": ["GeForce RTX 4090", "GeForce RTX 4080 SUPER", "GeForce RTX 4070 Ti SUPER", "GeForce RTX 3090", "GeForce RTX 3080", "GeForce RTX 3060"],
+    "gpuIds": [
+      "nv-rtx4090",
+      "nv-rtx4080",
+      "nv-rtx4070",
+      "nv-rtx3090",
+      "nv-rtx3080",
+      "nv-rtx3060"
+    ],
+    "gpuNames": [
+      "GeForce RTX 4090",
+      "GeForce RTX 4080 SUPER",
+      "GeForce RTX 4070 Ti SUPER",
+      "GeForce RTX 3090",
+      "GeForce RTX 3080",
+      "GeForce RTX 3060"
+    ],
     "version": "551.23",
     "isWHQL": true,
     "releaseDate": "2024-01-24",
     "fileSize": "1.35 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
     "sha256": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
     "changelog": [
@@ -18,9 +35,27 @@
       "修复多个稳定性问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "NVIDIA官方", "url": "https://us.download.nvidia.com/driver/551.23.exe", "enabled": true, "speed": 850 },
-      { "id": "m2", "name": "清华镜像", "url": "https://mirrors.tuna.edu.cn/nvidia/551.23.exe", "enabled": true, "speed": 1200 },
-      { "id": "m3", "name": "阿里云镜像", "url": "https://mirrors.aliyun.com/nvidia/551.23.exe", "enabled": true, "speed": 980 }
+      {
+        "id": "m1",
+        "name": "NVIDIA官方",
+        "url": "https://us.download.nvidia.com/driver/551.23.exe",
+        "enabled": true,
+        "speed": 850
+      },
+      {
+        "id": "m2",
+        "name": "清华镜像",
+        "url": "https://mirrors.tuna.edu.cn/nvidia/551.23.exe",
+        "enabled": true,
+        "speed": 1200
+      },
+      {
+        "id": "m3",
+        "name": "阿里云镜像",
+        "url": "https://mirrors.aliyun.com/nvidia/551.23.exe",
+        "enabled": true,
+        "speed": 980
+      }
     ],
     "downloadCount": 158923,
     "rating": 4.7,
@@ -29,13 +64,28 @@
   },
   {
     "id": "drv-nv-54617",
-    "gpuIds": ["nv-rtx4090", "nv-rtx4080", "nv-rtx4070", "nv-rtx3090", "nv-rtx3080"],
-    "gpuNames": ["GeForce RTX 4090", "GeForce RTX 4080 SUPER", "GeForce RTX 4070 Ti SUPER", "GeForce RTX 3090", "GeForce RTX 3080"],
+    "gpuIds": [
+      "nv-rtx4090",
+      "nv-rtx4080",
+      "nv-rtx4070",
+      "nv-rtx3090",
+      "nv-rtx3080"
+    ],
+    "gpuNames": [
+      "GeForce RTX 4090",
+      "GeForce RTX 4080 SUPER",
+      "GeForce RTX 4070 Ti SUPER",
+      "GeForce RTX 3090",
+      "GeForce RTX 3080"
+    ],
     "version": "546.17",
     "isWHQL": true,
     "releaseDate": "2023-11-14",
     "fileSize": "1.28 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
     "sha256": "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
     "changelog": [
@@ -45,8 +95,20 @@
       "修复4K分辨率下特定游戏闪屏问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "NVIDIA官方", "url": "https://us.download.nvidia.com/driver/546.17.exe", "enabled": true, "speed": 720 },
-      { "id": "m2", "name": "清华镜像", "url": "https://mirrors.tuna.edu.cn/nvidia/546.17.exe", "enabled": true, "speed": 1100 }
+      {
+        "id": "m1",
+        "name": "NVIDIA官方",
+        "url": "https://us.download.nvidia.com/driver/546.17.exe",
+        "enabled": true,
+        "speed": 720
+      },
+      {
+        "id": "m2",
+        "name": "清华镜像",
+        "url": "https://mirrors.tuna.edu.cn/nvidia/546.17.exe",
+        "enabled": true,
+        "speed": 1100
+      }
     ],
     "downloadCount": 287654,
     "rating": 4.5,
@@ -55,13 +117,27 @@
   },
   {
     "id": "drv-nv-53699",
-    "gpuIds": ["nv-rtx3060", "nv-gtx1660", "nv-rtx3090", "nv-rtx3080"],
-    "gpuNames": ["GeForce RTX 3060", "GeForce GTX 1660 SUPER", "GeForce RTX 3090", "GeForce RTX 3080"],
+    "gpuIds": [
+      "nv-rtx3060",
+      "nv-gtx1660",
+      "nv-rtx3090",
+      "nv-rtx3080"
+    ],
+    "gpuNames": [
+      "GeForce RTX 3060",
+      "GeForce GTX 1660 SUPER",
+      "GeForce RTX 3090",
+      "GeForce RTX 3080"
+    ],
     "version": "536.99",
     "isWHQL": true,
     "releaseDate": "2023-08-08",
     "fileSize": "1.12 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit", "Windows 7 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit",
+      "Windows 7 64-bit"
+    ],
     "md5": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8",
     "sha256": "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
     "changelog": [
@@ -70,9 +146,27 @@
       "改善多显示器配置稳定性"
     ],
     "mirrors": [
-      { "id": "m1", "name": "NVIDIA官方", "url": "https://us.download.nvidia.com/driver/536.99.exe", "enabled": true, "speed": 650 },
-      { "id": "m2", "name": "清华镜像", "url": "https://mirrors.tuna.edu.cn/nvidia/536.99.exe", "enabled": true, "speed": 980 },
-      { "id": "m3", "name": "阿里云镜像", "url": "https://mirrors.aliyun.com/nvidia/536.99.exe", "enabled": false, "speed": 0 }
+      {
+        "id": "m1",
+        "name": "NVIDIA官方",
+        "url": "https://us.download.nvidia.com/driver/536.99.exe",
+        "enabled": true,
+        "speed": 650
+      },
+      {
+        "id": "m2",
+        "name": "清华镜像",
+        "url": "https://mirrors.tuna.edu.cn/nvidia/536.99.exe",
+        "enabled": true,
+        "speed": 980
+      },
+      {
+        "id": "m3",
+        "name": "阿里云镜像",
+        "url": "https://mirrors.aliyun.com/nvidia/536.99.exe",
+        "enabled": false,
+        "speed": 0
+      }
     ],
     "downloadCount": 423156,
     "rating": 4.3,
@@ -81,13 +175,28 @@
   },
   {
     "id": "drv-amd-23121",
-    "gpuIds": ["amd-rx7900xtx", "amd-rx7900xt", "amd-rx7800xt", "amd-rx6800xt", "amd-rx6600"],
-    "gpuNames": ["Radeon RX 7900 XTX", "Radeon RX 7900 XT", "Radeon RX 7800 XT", "Radeon RX 6800 XT", "Radeon RX 6600 XT"],
+    "gpuIds": [
+      "amd-rx7900xtx",
+      "amd-rx7900xt",
+      "amd-rx7800xt",
+      "amd-rx6800xt",
+      "amd-rx6600"
+    ],
+    "gpuNames": [
+      "Radeon RX 7900 XTX",
+      "Radeon RX 7900 XT",
+      "Radeon RX 7800 XT",
+      "Radeon RX 6800 XT",
+      "Radeon RX 6600 XT"
+    ],
     "version": "23.12.1",
     "isWHQL": true,
     "releaseDate": "2023-12-12",
     "fileSize": "1.58 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9",
     "sha256": "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e",
     "changelog": [
@@ -98,8 +207,20 @@
       "修复Vulkan API下的若干崩溃问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "AMD官方", "url": "https://drivers.amd.com/drivers/23.12.1.exe", "enabled": true, "speed": 780 },
-      { "id": "m2", "name": "中科大镜像", "url": "https://mirrors.ustc.edu.cn/amd/23.12.1.exe", "enabled": true, "speed": 1050 }
+      {
+        "id": "m1",
+        "name": "AMD官方",
+        "url": "https://drivers.amd.com/drivers/23.12.1.exe",
+        "enabled": true,
+        "speed": 780
+      },
+      {
+        "id": "m2",
+        "name": "中科大镜像",
+        "url": "https://mirrors.ustc.edu.cn/amd/23.12.1.exe",
+        "enabled": true,
+        "speed": 1050
+      }
     ],
     "downloadCount": 98234,
     "rating": 4.4,
@@ -108,13 +229,24 @@
   },
   {
     "id": "drv-amd-23101",
-    "gpuIds": ["amd-rx7800xt", "amd-rx6800xt", "amd-rx6600"],
-    "gpuNames": ["Radeon RX 7800 XT", "Radeon RX 6800 XT", "Radeon RX 6600 XT"],
+    "gpuIds": [
+      "amd-rx7800xt",
+      "amd-rx6800xt",
+      "amd-rx6600"
+    ],
+    "gpuNames": [
+      "Radeon RX 7800 XT",
+      "Radeon RX 6800 XT",
+      "Radeon RX 6600 XT"
+    ],
     "version": "23.10.1",
     "isWHQL": true,
     "releaseDate": "2023-10-10",
     "fileSize": "1.42 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
     "sha256": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
     "changelog": [
@@ -124,9 +256,27 @@
       "修复RX 6000系列偶发黑屏问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "AMD官方", "url": "https://drivers.amd.com/drivers/23.10.1.exe", "enabled": true, "speed": 680 },
-      { "id": "m2", "name": "中科大镜像", "url": "https://mirrors.ustc.edu.cn/amd/23.10.1.exe", "enabled": true, "speed": 920 },
-      { "id": "m3", "name": "华为云镜像", "url": "https://mirrors.huaweicloud.com/amd/23.10.1.exe", "enabled": true, "speed": 870 }
+      {
+        "id": "m1",
+        "name": "AMD官方",
+        "url": "https://drivers.amd.com/drivers/23.10.1.exe",
+        "enabled": true,
+        "speed": 680
+      },
+      {
+        "id": "m2",
+        "name": "中科大镜像",
+        "url": "https://mirrors.ustc.edu.cn/amd/23.10.1.exe",
+        "enabled": true,
+        "speed": 920
+      },
+      {
+        "id": "m3",
+        "name": "华为云镜像",
+        "url": "https://mirrors.huaweicloud.com/amd/23.10.1.exe",
+        "enabled": true,
+        "speed": 870
+      }
     ],
     "downloadCount": 176845,
     "rating": 4.2,
@@ -135,13 +285,24 @@
   },
   {
     "id": "drv-intel-5078",
-    "gpuIds": ["intel-arc-a770", "intel-arc-a750", "intel-arc-a380"],
-    "gpuNames": ["Intel Arc A770", "Intel Arc A750", "Intel Arc A380"],
+    "gpuIds": [
+      "intel-arc-a770",
+      "intel-arc-a750",
+      "intel-arc-a380"
+    ],
+    "gpuNames": [
+      "Intel Arc A770",
+      "Intel Arc A750",
+      "Intel Arc A380"
+    ],
     "version": "31.0.101.5078",
     "isWHQL": true,
     "releaseDate": "2024-01-15",
     "fileSize": "892 MB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
     "sha256": "6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a",
     "changelog": [
@@ -152,8 +313,20 @@
       "新增对多款DX11老游戏的兼容支持"
     ],
     "mirrors": [
-      { "id": "m1", "name": "Intel官方", "url": "https://downloadmirror.intel.com/driver/5078.exe", "enabled": true, "speed": 560 },
-      { "id": "m2", "name": "清华镜像", "url": "https://mirrors.tuna.edu.cn/intel/5078.exe", "enabled": true, "speed": 890 }
+      {
+        "id": "m1",
+        "name": "Intel官方",
+        "url": "https://downloadmirror.intel.com/driver/5078.exe",
+        "enabled": true,
+        "speed": 560
+      },
+      {
+        "id": "m2",
+        "name": "清华镜像",
+        "url": "https://mirrors.tuna.edu.cn/intel/5078.exe",
+        "enabled": true,
+        "speed": 890
+      }
     ],
     "downloadCount": 45678,
     "rating": 4.1,
@@ -162,13 +335,23 @@
   },
   {
     "id": "drv-nv-55152-beta",
-    "gpuIds": ["nv-rtx4090", "nv-rtx4080", "nv-rtx4070"],
-    "gpuNames": ["GeForce RTX 4090", "GeForce RTX 4080 SUPER", "GeForce RTX 4070 Ti SUPER"],
+    "gpuIds": [
+      "nv-rtx4090",
+      "nv-rtx4080",
+      "nv-rtx4070"
+    ],
+    "gpuNames": [
+      "GeForce RTX 4090",
+      "GeForce RTX 4080 SUPER",
+      "GeForce RTX 4070 Ti SUPER"
+    ],
     "version": "551.52 Beta",
     "isWHQL": false,
     "releaseDate": "2024-02-05",
     "fileSize": "1.42 GB",
-    "osSupport": ["Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 11 64-bit"
+    ],
     "md5": "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
     "sha256": "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
     "changelog": [
@@ -177,7 +360,13 @@
       "注意：此为测试版，可能存在稳定性问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "NVIDIA官方", "url": "https://us.download.nvidia.com/driver/551.52-beta.exe", "enabled": true, "speed": 420 }
+      {
+        "id": "m1",
+        "name": "NVIDIA官方",
+        "url": "https://us.download.nvidia.com/driver/551.52-beta.exe",
+        "enabled": false,
+        "speed": 420
+      }
     ],
     "downloadCount": 12456,
     "rating": 3.8,
@@ -188,13 +377,20 @@
   },
   {
     "id": "drv-pending-001",
-    "gpuIds": ["nv-gtx1660"],
-    "gpuNames": ["GeForce GTX 1660 SUPER"],
+    "gpuIds": [
+      "nv-gtx1660"
+    ],
+    "gpuNames": [
+      "GeForce GTX 1660 SUPER"
+    ],
     "version": "552.12",
     "isWHQL": true,
     "releaseDate": "2024-02-20",
     "fileSize": "1.18 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
     "sha256": "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c",
     "changelog": [
@@ -202,7 +398,13 @@
       "修复视频编辑软件硬件加速问题"
     ],
     "mirrors": [
-      { "id": "m1", "name": "网友分享源", "url": "https://pan.example.com/nvidia-552.12.exe", "enabled": true, "speed": 380 }
+      {
+        "id": "m1",
+        "name": "网友分享源",
+        "url": "https://pan.example.com/nvidia-552.12.exe",
+        "enabled": true,
+        "speed": 380
+      }
     ],
     "downloadCount": 0,
     "rating": 0,
@@ -213,13 +415,20 @@
   },
   {
     "id": "drv-pending-002",
-    "gpuIds": ["amd-rx6600"],
-    "gpuNames": ["Radeon RX 6600 XT"],
+    "gpuIds": [
+      "amd-rx6600"
+    ],
+    "gpuNames": [
+      "Radeon RX 6600 XT"
+    ],
     "version": "24.2.1 Beta",
     "isWHQL": false,
     "releaseDate": "2024-02-18",
     "fileSize": "1.62 GB",
-    "osSupport": ["Windows 10 64-bit", "Windows 11 64-bit"],
+    "osSupport": [
+      "Windows 10 64-bit",
+      "Windows 11 64-bit"
+    ],
     "md5": "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
     "sha256": "9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d",
     "changelog": [
@@ -227,7 +436,13 @@
       "优化RX 6000系列能耗比"
     ],
     "mirrors": [
-      { "id": "m1", "name": "第三方", "url": "https://example.com/amd-24.2.1.exe", "enabled": true, "speed": 300 }
+      {
+        "id": "m1",
+        "name": "第三方",
+        "url": "https://example.com/amd-24.2.1.exe",
+        "enabled": true,
+        "speed": 300
+      }
     ],
     "downloadCount": 0,
     "rating": 0,

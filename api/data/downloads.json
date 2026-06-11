@@ -1,5 +1,16 @@
 [
   {
+    "id": "dl-1781171285021",
+    "driverId": "drv-nv-55152-beta",
+    "driverName": "GeForce RTX 4090 551.52 Beta",
+    "version": "551.52 Beta",
+    "mirrorId": "m1",
+    "size": "1.42 GB",
+    "progress": 63,
+    "status": "downloading",
+    "startTime": "2026-06-11T09:48:05.021Z"
+  },
+  {
     "id": "dl-001",
     "driverId": "drv-nv-55123",
     "driverName": "GeForce Game Ready 551.23 WHQL",

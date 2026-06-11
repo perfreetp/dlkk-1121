@@ -15,8 +15,34 @@ const getGpus = (): GpuModel[] => {
 };
 
 router.get('/', (req: Request, res: Response) => {
-  const { brand, brands, series, search, sort = 'releaseDate', order = 'desc' } = req.query;
+  const { brand, brands, series, search, sort = 'releaseDate', order = 'desc', os, dateFrom, dateTo } = req.query;
   let gpus = getGpus();
+
+  const driversPath = path.join(__dirname, '..', 'data', 'drivers.json');
+  const allDrivers = JSON.parse(fs.readFileSync(driversPath, 'utf-8')) as any[];
+  const approvedDrivers = allDrivers.filter(d => d.status === 'approved');
+
+  let validGpuIds = new Set<string>();
+  if (os || dateFrom || dateTo) {
+    let filteredDrivers = approvedDrivers;
+    if (os) {
+      const osList = String(os).split(',').filter(Boolean);
+      filteredDrivers = filteredDrivers.filter(d =>
+        osList.some(osItem =>
+          d.osSupport.some((s: string) => s.toLowerCase().includes(osItem.toLowerCase()))
+        )
+      );
+    }
+    if (dateFrom) {
+      const from = new Date(String(dateFrom)).getTime();
+      filteredDrivers = filteredDrivers.filter(d => new Date(d.releaseDate).getTime() >= from);
+    }
+    if (dateTo) {
+      const to = new Date(String(dateTo)).getTime();
+      filteredDrivers = filteredDrivers.filter(d => new Date(d.releaseDate).getTime() <= to);
+    }
+    filteredDrivers.forEach(d => d.gpuIds.forEach((id: string) => validGpuIds.add(id)));
+  }
 
   const brandList = brands ? String(brands).split(',').filter(Boolean) : (brand ? [String(brand)] : []);
   if (brandList.length > 0) {
@@ -33,6 +59,9 @@ router.get('/', (req: Request, res: Response) => {
       g.series.toLowerCase().includes(q) ||
       (g.codename || '').toLowerCase().includes(q)
     );
+  }
+  if (validGpuIds.size > 0) {
+    gpus = gpus.filter(g => validGpuIds.has(g.id));
   }
 
   gpus.sort((a, b) => {

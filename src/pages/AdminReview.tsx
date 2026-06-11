@@ -12,7 +12,7 @@ import type { Feedback, Driver } from '@/types';
 
 type TabKey = 'pending_drivers' | 'feedback' | 'mirrors';
 interface Stats { total: number; approved: number; pending: number; rejected: number; }
-interface MirrorRow { id: string; driverId: string; driverName: string; mirrorName: string; url: string; speed?: number; enabled: boolean; }
+interface MirrorRow { id: string; driverId: string; mirrorId: string; driverName: string; mirrorName: string; url: string; speed?: number; enabled: boolean; }
 
 export default function AdminReview() {
   const [activeTab, setActiveTab] = useState<TabKey>('pending_drivers');
@@ -34,7 +34,7 @@ export default function AdminReview() {
     api.drivers.list().then((data) => {
       const rows: MirrorRow[] = [];
       (data as Driver[]).forEach((d) => d.mirrors.forEach((m) => rows.push({
-        id: `${d.id}-${m.id}`, driverId: d.id,
+        id: `${d.id}-${m.id}`, driverId: d.id, mirrorId: m.id,
         driverName: `${d.version} - ${d.gpuNames?.[0] || d.id}`,
         mirrorName: m.name, url: m.url, speed: m.speed, enabled: m.enabled,
       })));
@@ -105,7 +105,7 @@ export default function AdminReview() {
     { key: 'enabled', title: '状态', width: '90px', render: (r) => r.enabled ? <Badge variant="whql">启用</Badge> : <Badge variant="danger">禁用</Badge> },
     { key: 'actions', title: '操作', width: '100px', align: 'right', render: (r) => (
       <div className="flex justify-end">
-        <button onClick={() => handleToggleMirror(r.driverId, r.id.split('-')[1], r.enabled)} className={cn(
+        <button onClick={() => handleToggleMirror(r.driverId, r.mirrorId, r.enabled)} className={cn(
           '!px-3 !py-1.5 text-xs btn-ghost', r.enabled ? 'text-warn hover:!border-warn/30' : 'text-whql hover:!border-whql/30'
         )}>
           <Power className="w-3.5 h-3.5" />{r.enabled ? '禁用' : '启用'}
