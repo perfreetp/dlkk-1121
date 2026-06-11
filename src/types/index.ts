@@ -40,6 +40,7 @@ export const DOWNLOAD_STATUS_MAP = {
   downloading: { label: '下载中', color: 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30' },
   failed: { label: '失败', color: 'bg-danger/20 text-danger border-danger/30' },
   canceled: { label: '已取消', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
+  paused: { label: '已暂停', color: 'bg-warn/20 text-warn border-warn/30' },
 };
 
 export const FEEDBACK_STATUS_MAP = {

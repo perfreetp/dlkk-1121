@@ -362,10 +362,14 @@
     "mirrors": [
       {
         "id": "m1",
-        "name": "NVIDIA官方",
+        "name": "NVIDIA??-??",
         "url": "https://us.download.nvidia.com/driver/551.52-beta.exe",
         "enabled": false,
-        "speed": 420
+        "speed": 2048,
+        "backupUrls": [
+          "https://mirrors.tuna.edu.cn/nvidia/551.52-beta.exe",
+          "https://mirrors.aliyun.com/nvidia/551.52-beta.exe"
+        ]
       }
     ],
     "downloadCount": 12456,

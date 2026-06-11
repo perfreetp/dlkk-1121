@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Home, ChevronRight, Heart, Share2, Flag, Copy, Check, CheckCircle,
-  Download, Package, Calendar, Hash, ChevronDown, ChevronUp
+  Download, Package, Calendar, Hash, ChevronDown, ChevronUp,
+  Monitor, HardDrive, AlertTriangle, ThumbsUp, ThumbsDown, Zap, Shield, Cpu
 } from 'lucide-react';
-import type { Driver } from '@/types';
+import type { Driver, GpuModel } from '@/types';
 import { api } from '@/utils/api';
 import { useAppStore } from '@/store/appStore';
 import { formatDate, formatDownloadCount, truncateHash, copyToClipboard, cn } from '@/utils/format';
@@ -12,6 +13,7 @@ import Badge from '@/components/Badge';
 import StarRating from '@/components/StarRating';
 import MirrorSelector from '@/components/MirrorSelector';
 import DownloadButton from '@/components/DownloadButton';
+import { OS_OPTIONS, BRAND_OPTIONS } from '@/types';
 
 const mockReviews = [
   { id: '1', author: 'TechEnthusiast', avatar: 'TE', rating: 5, content: '驱动非常稳定，游戏性能提升明显，推荐安装。', date: '2024-01-15' },
@@ -19,10 +21,20 @@ const mockReviews = [
   { id: '3', author: 'DevOps_Andy', avatar: 'DA', rating: 4, content: '安装顺利，CUDA 运行正常，适合开发环境使用。', date: '2024-01-05' },
 ];
 
+type CompatLevel = 'excellent' | 'good' | 'warning' | 'incompatible';
+
+interface CompatResult {
+  level: CompatLevel;
+  title: string;
+  reasons: string[];
+  suggestions: string[];
+}
+
 export default function DriverDetail() {
   const { id } = useParams<{ id: string }>();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [historyDrivers, setHistoryDrivers] = useState<Driver[]>([]);
+  const [allGpus, setAllGpus] = useState<GpuModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMirror, setSelectedMirror] = useState('');
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -32,27 +44,97 @@ export default function DriverDetail() {
   const [userRating, setUserRating] = useState(0);
   const [showRatingSuccess, setShowRatingSuccess] = useState(false);
 
+  const [compatOs, setCompatOs] = useState('');
+  const [compatGpuId, setCompatGpuId] = useState('');
+  const [compatResult, setCompatResult] = useState<CompatResult | null>(null);
+
   const { favorites, toggleFavorite, startDownload, toggleDriverSelection, selectedDriverIds } = useAppStore();
   const isFavorite = favorites.some((f) => f.id === id);
   const isSelected = selectedDriverIds.includes(id || '');
 
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    api.drivers.get(id).then(async (d) => {
-      const driverData = d as Driver;
-      setDriver(driverData);
-      const m = driverData.mirrors.filter((x) => x.enabled);
-      if (m.length > 0) setSelectedMirror(m[0].id);
-      if (driverData.gpuIds.length > 0) {
-        const history = await api.drivers.byGpu(driverData.gpuIds[0]) as Driver[];
-        const sortedHistory = history
-          .filter(h => h.status === 'approved')
-          .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
-        setHistoryDrivers(sortedHistory);
+    Promise.all([
+      api.gpus.list(),
+      id ? api.drivers.get(id) : Promise.resolve(null),
+    ]).then(async ([gpusData, driverRaw]) => {
+      setAllGpus(gpusData as GpuModel[]);
+      if (driverRaw) {
+        const driverData = driverRaw as Driver;
+        setDriver(driverData);
+        const m = driverData.mirrors.filter((x) => x.enabled);
+        if (m.length > 0) setSelectedMirror(m[0].id);
+        if (driverData.gpuIds.length > 0) {
+          const history = await api.drivers.byGpu(driverData.gpuIds[0]) as Driver[];
+          const sortedHistory = history
+            .filter(h => h.status === 'approved')
+            .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+          setHistoryDrivers(sortedHistory);
+        }
       }
     }).catch(console.error).finally(() => setLoading(false));
   }, [id]);
+
+  const runCompatCheck = () => {
+    if (!driver || !compatOs || !compatGpuId) {
+      setCompatResult(null);
+      return;
+    }
+    const reasons: string[] = [];
+    const suggestions: string[] = [];
+    let level: CompatLevel = 'excellent';
+    const gpu = allGpus.find(g => g.id === compatGpuId);
+    const gpuSupported = driver.gpuIds.includes(compatGpuId);
+    const osSupported = driver.osSupport.some(s => s.toLowerCase().includes(compatOs.toLowerCase().split(' ')[0]));
+
+    if (!gpuSupported) {
+      level = 'incompatible';
+      reasons.push(`此版本驱动不支持 ${gpu?.name || '该显卡'}（适配列表中未包含此型号）`);
+      suggestions.push('请检查显卡型号是否正确，或返回型号库选择对应驱动');
+    }
+    if (!osSupported) {
+      if (level !== 'incompatible') level = 'warning';
+      reasons.push(`${compatOs} 不在此驱动支持的系统列表中`);
+      suggestions.push('选择支持的系统版本，或尝试安装兼容模式运行（可能不稳定）');
+    }
+
+    if (gpuSupported && osSupported) {
+      if (driver.isWHQL) {
+        reasons.push('驱动已通过微软 WHQL 认证，稳定性有保障');
+        reasons.push(`显卡型号 ${gpu?.name || ''} 在官方适配列表中`);
+        reasons.push(`完全支持 ${compatOs} 系统`);
+      } else {
+        level = 'warning';
+        reasons.push('此版本为 Beta 测试版，可能存在稳定性问题');
+        reasons.push(`显卡型号 ${gpu?.name || ''} 在适配列表中`);
+        reasons.push(`完全支持 ${compatOs} 系统`);
+        suggestions.push('如遇到问题，建议回退到上一版 WHQL 正式版驱动');
+      }
+      if (driver.rating >= 4.5) {
+        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分（${driver.ratingCount} 人评价），口碑极佳`);
+      } else if (driver.rating >= 4.0) {
+        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分，整体评价良好`);
+      } else {
+        if (level === 'excellent') level = 'good';
+        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分，建议安装前查看用户评论`);
+        suggestions.push('先查看页面下方的用户评论，了解实际使用反馈');
+      }
+      if (historyDrivers.length > 1 && historyDrivers[0]?.id === driver.id) {
+        reasons.push('此为当前显卡的最新版本驱动，包含最新功能与性能优化');
+      }
+    }
+
+    const titles: Record<CompatLevel, string> = {
+      excellent: '强烈推荐安装',
+      good: '推荐安装',
+      warning: '谨慎安装，建议先查看说明',
+      incompatible: '不推荐安装，存在兼容性问题',
+    };
+    if (suggestions.length === 0 && gpuSupported && osSupported) {
+      suggestions.push('安装前建议先备份旧驱动，以便需要时回退');
+      suggestions.push('使用 DDU（Display Driver Uninstaller）清理旧驱动后安装更稳定');
+    }
+    setCompatResult({ level, title: titles[level], reasons, suggestions });
+  };
 
   const handleCopy = async (text: string, field: string) => {
     if (await copyToClipboard(text)) {
@@ -214,6 +296,120 @@ export default function DriverDetail() {
             </Link>
           ))}
         </div>
+      </div>
+
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-neon-cyan" />
+          适配性检查
+          <span className="text-xs text-slate-500 font-normal">选择你的系统和显卡，快速判断能否安装</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1 flex items-center gap-1">
+              <Monitor className="w-3 h-3" /> 系统版本
+            </label>
+            <select
+              value={compatOs}
+              onChange={(e) => { setCompatOs(e.target.value); setCompatResult(null); }}
+              className="input-base text-sm"
+            >
+              <option value="">请选择系统版本</option>
+              {OS_OPTIONS.map(os => (
+                <option key={os} value={os}>{os}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1 flex items-center gap-1">
+              <Cpu className="w-3 h-3" /> 显卡型号
+            </label>
+            <select
+              value={compatGpuId}
+              onChange={(e) => { setCompatGpuId(e.target.value); setCompatResult(null); }}
+              className="input-base text-sm"
+            >
+              <option value="">请选择显卡型号</option>
+              {allGpus.map(g => (
+                <option key={g.id} value={g.id}>
+                  {BRAND_OPTIONS.find(b => b.value === g.brand)?.label} {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={runCompatCheck}
+              disabled={!compatOs || !compatGpuId}
+              className="btn-primary w-full md:w-auto text-sm !py-2.5"
+            >
+              <Zap className="w-4 h-4" />
+              开始检查
+            </button>
+          </div>
+        </div>
+
+        {compatResult && (
+          <div className={cn(
+            'p-4 rounded-lg border',
+            compatResult.level === 'excellent' && 'bg-whql/10 border-whql/30',
+            compatResult.level === 'good' && 'bg-neon-cyan/10 border-neon-cyan/30',
+            compatResult.level === 'warning' && 'bg-warn/10 border-warn/30',
+            compatResult.level === 'incompatible' && 'bg-danger/10 border-danger/30',
+          )}>
+            <div className="flex items-start gap-3 mb-3">
+              <div className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+                (compatResult.level === 'excellent' || compatResult.level === 'good')
+                  ? 'bg-whql/20'
+                  : compatResult.level === 'warning' ? 'bg-warn/20' : 'bg-danger/20'
+              )}>
+                {(compatResult.level === 'excellent' || compatResult.level === 'good') ? (
+                  <ThumbsUp className={cn(
+                    'w-5 h-5',
+                    compatResult.level === 'excellent' ? 'text-whql' : 'text-neon-cyan'
+                  )} />
+                ) : compatResult.level === 'warning' ? (
+                  <AlertTriangle className="w-5 h-5 text-warn" />
+                ) : (
+                  <ThumbsDown className="w-5 h-5 text-danger" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={cn(
+                  'text-lg font-semibold mb-1',
+                  (compatResult.level === 'excellent') && 'text-whql',
+                  compatResult.level === 'good' && 'text-neon-cyan',
+                  compatResult.level === 'warning' && 'text-warn',
+                  compatResult.level === 'incompatible' && 'text-danger',
+                )}>
+                  {compatResult.title}
+                </h3>
+                <div className="space-y-1.5 mb-3">
+                  {compatResult.reasons.map((r, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                      <CheckCircle className={cn(
+                        'w-4 h-4 mt-0.5 flex-shrink-0',
+                        compatResult.level === 'incompatible' ? 'text-danger/60' : 'text-whql/60'
+                      )} />
+                      <span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+                {compatResult.suggestions.length > 0 && (
+                  <div className="pt-3 border-t border-white/10">
+                    <div className="text-xs text-slate-500 mb-2">💡 建议</div>
+                    <ul className="space-y-1">
+                      {compatResult.suggestions.map((s, i) => (
+                        <li key={i} className="text-xs text-slate-400">• {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card p-6 mb-6">

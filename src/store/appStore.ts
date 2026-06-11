@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import type { Driver, DownloadRecord } from '@/types';
 import { api } from '@/utils/api';
 
+const DEFAULT_INSTALL_NOTES = [
+  '安装前请关闭杀毒软件，避免误拦截驱动签名文件',
+  '建议先卸载旧版本驱动（DDU清理更彻底），再安装新版本',
+  '安装过程中屏幕可能会闪烁数次，属于正常现象',
+  '安装完成后需重启电脑，驱动才能完全生效',
+  '如遇蓝屏问题，可进入安全模式回滚或重装上一版驱动',
+];
+
 interface AppState {
   favorites: Driver[];
   downloads: DownloadRecord[];
@@ -12,6 +20,10 @@ interface AppState {
   startDownload: (driver: Driver, mirrorId: string) => Promise<void>;
   batchStartDownload: (gpuIds: string[]) => Promise<number>;
   updateDownloadProgress: (id: string, progress: number, status?: DownloadRecord['status']) => Promise<void>;
+  pauseDownload: (id: string) => Promise<void>;
+  resumeDownload: (id: string) => Promise<void>;
+  cancelDownload: (id: string) => Promise<void>;
+  retryDownload: (id: string) => Promise<void>;
   toggleDriverSelection: (driverId: string) => void;
   clearSelection: () => void;
   batchSelect: (ids: string[]) => void;
@@ -51,27 +63,35 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   startDownload: async (driver: Driver, mirrorId: string) => {
     try {
+      const mirror = driver.mirrors.find(m => m.id === mirrorId);
       const record = await api.downloads.create({
         driverId: driver.id,
         driverName: driver.gpuNames?.[0] ? `${driver.gpuNames[0]} ${driver.version}` : driver.version,
         version: driver.version,
         mirrorId,
+        mirrorName: mirror?.name,
+        mirrorUrl: mirror?.url,
+        gpuNames: driver.gpuNames,
+        md5: driver.md5,
+        sha256: driver.sha256,
+        installNotes: DEFAULT_INSTALL_NOTES,
+        osSupport: driver.osSupport,
         size: driver.fileSize,
       }) as DownloadRecord;
       set({ downloads: [record, ...get().downloads] });
-      // 模拟下载进度
-      const simulate = () => {
-        const current = get().downloads.find(d => d.id === record.id);
+      const simulate = (id: string, baseProgress = 0) => {
+        const current = get().downloads.find(d => d.id === id);
         if (!current || current.status !== 'downloading') return;
-        const nextProgress = Math.min(current.progress + Math.random() * 12 + 5, 100);
+        const nextProgress = Math.min(baseProgress + Math.random() * 12 + 5, 100);
         if (nextProgress >= 100) {
-          get().updateDownloadProgress(record.id, 100, 'completed');
+          get().updateDownloadProgress(id, 100, 'completed');
         } else {
-          get().updateDownloadProgress(record.id, Math.round(nextProgress));
-          setTimeout(simulate, 1200);
+          const rounded = Math.round(nextProgress);
+          get().updateDownloadProgress(id, rounded);
+          setTimeout(() => simulate(id, rounded), 1200);
         }
       };
-      setTimeout(simulate, 1000);
+      setTimeout(() => simulate(record.id), 1000);
     } catch (e) { console.error(e); }
   },
 
@@ -84,6 +104,90 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         downloads: get().downloads.map(d => (d.id === id ? updated : d)),
       });
+    } catch (e) { console.error(e); }
+  },
+
+  pauseDownload: async (id: string) => {
+    try {
+      const current = get().downloads.find(function(d) { return d.id === id; });
+      if (!current) return;
+      const updated = await api.downloads.update(id, {
+        status: 'paused',
+        pausedTime: new Date().toISOString(),
+        pausedProgress: current.progress,
+      }) as DownloadRecord;
+      const nextList = get().downloads.map(function(d) { return d.id === id ? updated : d; });
+      set({ downloads: nextList });
+    } catch (e) { console.error(e); }
+  },
+
+  resumeDownload: async (id: string) => {
+    try {
+      const current = get().downloads.find(function(d) { return d.id === id; });
+      if (!current) return;
+      const baseProgress = current.pausedProgress != null ? current.pausedProgress : current.progress;
+      const updated = await api.downloads.update(id, {
+        status: 'downloading',
+        progress: baseProgress,
+      }) as DownloadRecord;
+      const nextList = get().downloads.map(function(d) { return d.id === id ? updated : d; });
+      set({ downloads: nextList });
+      const simulate = (rid: string, base: number) => {
+        const cur = get().downloads.find(d => d.id === rid);
+        if (!cur || cur.status !== 'downloading') return;
+        const nextProgress = Math.min(base + Math.random() * 12 + 5, 100);
+        if (nextProgress >= 100) {
+          get().updateDownloadProgress(rid, 100, 'completed');
+        } else {
+          const rounded = Math.round(nextProgress);
+          get().updateDownloadProgress(rid, rounded);
+          setTimeout(() => simulate(rid, rounded), 1200);
+        }
+      };
+      setTimeout(() => simulate(id, baseProgress), 1000);
+    } catch (e) { console.error(e); }
+  },
+
+  cancelDownload: async (id: string) => {
+    try {
+      const current = get().downloads.find(function(d) { return d.id === id; });
+      if (!current) return;
+      const updated = await api.downloads.update(id, {
+        status: 'canceled',
+      }) as DownloadRecord;
+      const nextList = get().downloads.map(function(d) { return d.id === id ? updated : d; });
+      set({ downloads: nextList });
+    } catch (e) { console.error(e); }
+  },
+
+  retryDownload: async (id: string) => {
+    try {
+      const current = get().downloads.find(function(d) { return d.id === id; });
+      if (!current) return;
+      const drivers = await api.drivers.list({ status: 'approved' }) as Driver[];
+      const driver = drivers.find(function(d) { return d.id === current.driverId; });
+      if (!driver) return;
+      const mirror = driver.mirrors.find(function(m) { return m.id === current.mirrorId; }) || driver.mirrors.find(function(m) { return m.enabled; });
+      if (!mirror) return;
+      const updated = await api.downloads.update(id, {
+        status: 'downloading',
+        progress: 0,
+      }) as DownloadRecord;
+      const nextList = get().downloads.map(function(d) { return d.id === id ? updated : d; });
+      set({ downloads: nextList });
+      const simulate = (rid: string, base: number) => {
+        const cur = get().downloads.find(function(d) { return d.id === rid; });
+        if (!cur || cur.status !== 'downloading') return;
+        const nextProgress = Math.min(base + Math.random() * 12 + 5, 100);
+        if (nextProgress >= 100) {
+          get().updateDownloadProgress(rid, 100, 'completed');
+        } else {
+          const rounded = Math.round(nextProgress);
+          get().updateDownloadProgress(rid, rounded);
+          setTimeout(function() { simulate(rid, rounded); }, 1200);
+        }
+      };
+      setTimeout(function() { simulate(id, 0); }, 1000);
     } catch (e) { console.error(e); }
   },
 

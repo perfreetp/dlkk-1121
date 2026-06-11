@@ -7,8 +7,10 @@
     "mirrorId": "m1",
     "size": "1.42 GB",
     "progress": 63,
-    "status": "downloading",
-    "startTime": "2026-06-11T09:48:05.021Z"
+    "status": "paused",
+    "startTime": "2026-06-11T09:48:05.021Z",
+    "pausedTime": "2026-06-11T10:12:42.071Z",
+    "pausedProgress": 63
   },
   {
     "id": "dl-001",

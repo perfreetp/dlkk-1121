@@ -22,8 +22,10 @@ router.get('/', (req: Request, res: Response) => {
   const allDrivers = JSON.parse(fs.readFileSync(driversPath, 'utf-8')) as any[];
   const approvedDrivers = allDrivers.filter(d => d.status === 'approved');
 
+  let hasDriverFilter = false;
   let validGpuIds = new Set<string>();
   if (os || dateFrom || dateTo) {
+    hasDriverFilter = true;
     let filteredDrivers = approvedDrivers;
     if (os) {
       const osList = String(os).split(',').filter(Boolean);
@@ -60,7 +62,7 @@ router.get('/', (req: Request, res: Response) => {
       (g.codename || '').toLowerCase().includes(q)
     );
   }
-  if (validGpuIds.size > 0) {
+  if (hasDriverFilter) {
     gpus = gpus.filter(g => validGpuIds.has(g.id));
   }
 

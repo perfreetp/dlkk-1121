@@ -19,6 +19,7 @@ export interface MirrorSource {
   url: string;
   enabled: boolean;
   speed?: number;
+  backupUrls?: string[];
 }
 
 export interface Driver {
@@ -42,7 +43,7 @@ export interface Driver {
   submitReason?: string;
 }
 
-export type DownloadStatus = 'completed' | 'downloading' | 'failed' | 'canceled';
+export type DownloadStatus = 'completed' | 'downloading' | 'failed' | 'canceled' | 'paused';
 
 export interface DownloadRecord {
   id: string;
@@ -50,11 +51,20 @@ export interface DownloadRecord {
   driverName: string;
   version: string;
   mirrorId: string;
+  mirrorName?: string;
+  mirrorUrl?: string;
+  gpuNames?: string[];
+  md5?: string;
+  sha256?: string;
+  installNotes?: string[];
+  osSupport?: string[];
   status: DownloadStatus;
   progress: number;
   size: string;
   startTime: string;
   completedTime?: string;
+  pausedTime?: string;
+  pausedProgress?: number;
 }
 
 export type FeedbackType = 'broken_link' | 'install_issue' | 'performance' | 'compatibility' | 'other';
