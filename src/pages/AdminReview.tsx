@@ -1,28 +1,32 @@
 import { useState, useEffect } from 'react';
 import {
   Settings, Database, CheckCircle2, Clock, XCircle, HardDrive, MessageSquare,
-  Link as LinkIcon, Power, Eye, X, Pencil, Plus, Trash2, Gauge, Link2Off,
+  Link as LinkIcon, Power, Eye, X, Pencil, Plus, Trash2, Gauge, Link2Off, Star, Shield,
 } from 'lucide-react';
 import Badge from '@/components/Badge';
 import DataTable, { DataColumn } from '@/components/DataTable';
 import { api } from '@/utils/api';
 import { formatDateTime, cn } from '@/utils/format';
 import { FEEDBACK_TYPES, FEEDBACK_STATUS_MAP } from '@/types';
-import type { Feedback, Driver } from '@/types';
+import type { Feedback, Driver, BackupUrl } from '@/types';
 
 type TabKey = 'pending_drivers' | 'feedback' | 'mirrors';
 interface Stats { total: number; approved: number; pending: number; rejected: number; }
 interface MirrorRow {
   id: string; driverId: string; mirrorId: string; driverName: string;
   mirrorName: string; url: string; speed?: number; enabled: boolean;
-  backupUrls?: string[];
+  backupUrls?: BackupUrl[];
+}
+interface BackupUrlEntry {
+  url: string;
+  label: 'primary' | 'backup';
 }
 interface MirrorEditData {
   id: string; driverId: string; mirrorId: string; driverName: string;
-  mirrorName: string; url: string; speedStr: string; backupUrlStr: string;
+  mirrorName: string; url: string; speedStr: string; backupEntries: BackupUrlEntry[];
 }
 interface MirrorAddData {
-  driverId: string; mirrorName: string; url: string; speedStr: string; backupUrlStr: string;
+  driverId: string; mirrorName: string; url: string; speedStr: string; backupEntries: BackupUrlEntry[];
 }
 
 export default function AdminReview() {
@@ -77,19 +81,22 @@ export default function AdminReview() {
   const handleReplySubmit = async () => { if (!detailModal || !replyText) return; await api.feedback.update(detailModal.id, { status: replyStatus, reply: replyText }); setDetailModal(null); setReplyText(''); reload(); };
 
   const openEditMirror = (row: MirrorRow) => {
+    const entries: BackupUrlEntry[] = (row.backupUrls || []).map(b =>
+      typeof b === 'string' ? { url: b as string, label: 'backup' as const } : { url: b.url, label: b.label || 'backup' }
+    );
     setEditMirror({
       id: row.id, driverId: row.driverId, mirrorId: row.mirrorId,
       driverName: row.driverName,
       mirrorName: row.mirrorName, url: row.url,
       speedStr: row.speed !== undefined ? String(row.speed) : '',
-      backupUrlStr: (row.backupUrls || []).join('\n'),
+      backupEntries: entries,
     });
   };
 
   const openAddMirror = () => {
     setAddMirror({
       driverId: allDrivers[0]?.id || '',
-      mirrorName: '', url: '', speedStr: '', backupUrlStr: '',
+      mirrorName: '', url: '', speedStr: '', backupEntries: [],
     });
   };
 
@@ -101,13 +108,12 @@ export default function AdminReview() {
         showMsg('error', '测速结果必须是数字（单位 KB/s）');
         return;
       }
-      const backupUrls = editMirror.backupUrlStr
-        .split('\n').map(s => s.trim()).filter(Boolean);
+      const backupUrls = editMirror.backupEntries.filter(e => e.url.trim());
       await api.admin.updateMirror(editMirror.driverId, editMirror.mirrorId, {
         name: editMirror.mirrorName,
         url: editMirror.url,
         speed: speedVal,
-        backupUrls: backupUrls.length > 0 ? backupUrls : ([] as any),
+        backupUrls: backupUrls.length > 0 ? backupUrls : [],
       });
       showMsg('success', '镜像源已更新');
       setEditMirror(null);
@@ -130,8 +136,7 @@ export default function AdminReview() {
         showMsg('error', '测速结果必须是数字（单位 KB/s）');
         return;
       }
-      const backupUrls = addMirror.backupUrlStr
-        .split('\n').map(s => s.trim()).filter(Boolean);
+      const backupUrls = addMirror.backupEntries.filter(e => e.url.trim());
       await api.admin.addMirror(addMirror.driverId, {
         name: addMirror.mirrorName.trim(),
         url: addMirror.url.trim(),
@@ -204,7 +209,19 @@ export default function AdminReview() {
           {r.url}
         </a>
         {r.backupUrls && r.backupUrls.length > 0 && (
-          <div className="mt-1 text-[10px] text-slate-500">+{r.backupUrls.length} 个备用</div>
+          <div className="mt-1 space-y-0.5">
+            {r.backupUrls.map((b, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <span className={cn(
+                  'text-[9px] px-1 py-0 rounded font-medium',
+                  b.label === 'primary' ? 'bg-neon-cyan/15 text-neon-cyan' : 'bg-slate-700/50 text-slate-500'
+                )}>
+                  {b.label === 'primary' ? '主用' : '备用'}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono truncate max-w-[200px]">{b.url}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     )},
@@ -442,14 +459,61 @@ export default function AdminReview() {
                 <label className="block text-sm font-medium text-white mb-1.5 flex items-center gap-1">
                   <Link2Off className="w-3.5 h-3.5 text-slate-500" /> 备用下载地址
                 </label>
-                <textarea
-                  value={editMirror.backupUrlStr}
-                  onChange={(e) => setEditMirror({ ...editMirror, backupUrlStr: e.target.value })}
-                  placeholder="每行一个备用地址&#10;https://mirror1.example.com/file&#10;https://mirror2.example.com/file"
-                  rows={4}
-                  className="input-base resize-none font-mono text-xs"
-                />
-                <p className="text-xs text-slate-500 mt-1">每行填写一个备用 URL，留空表示无备用</p>
+                <div className="space-y-2">
+                  {editMirror.backupEntries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const next = [...editMirror.backupEntries];
+                          next[idx] = { ...next[idx], label: next[idx].label === 'primary' ? 'backup' : 'primary' };
+                          setEditMirror({ ...editMirror, backupEntries: next });
+                        }}
+                        className={cn(
+                          'flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium border transition-all',
+                          entry.label === 'primary'
+                            ? 'bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan'
+                            : 'bg-bg-700/50 border-white/10 text-slate-400'
+                        )}
+                        title={entry.label === 'primary' ? '当前标记为主用，点击切换为备用' : '当前标记为备用，点击切换为主用'}
+                      >
+                        {entry.label === 'primary' ? <Star className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                        {entry.label === 'primary' ? '主用' : '备用'}
+                      </button>
+                      <input
+                        type="url"
+                        value={entry.url}
+                        onChange={(e) => {
+                          const next = [...editMirror.backupEntries];
+                          next[idx] = { ...next[idx], url: e.target.value };
+                          setEditMirror({ ...editMirror, backupEntries: next });
+                        }}
+                        placeholder="https://..."
+                        className="input-base flex-1 !text-xs font-mono"
+                      />
+                      <button
+                        onClick={() => {
+                          const next = editMirror.backupEntries.filter((_, i) => i !== idx);
+                          setEditMirror({ ...editMirror, backupEntries: next });
+                        }}
+                        className="flex-shrink-0 text-danger hover:text-red-400 p-1"
+                        title="删除"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setEditMirror({
+                        ...editMirror,
+                        backupEntries: [...editMirror.backupEntries, { url: '', label: 'backup' }],
+                      });
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-neon-cyan hover:text-neon-cyan/80 transition-colors py-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />添加备用地址
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-white/5">
@@ -529,13 +593,59 @@ export default function AdminReview() {
                 <label className="block text-sm font-medium text-white mb-1.5 flex items-center gap-1">
                   <Link2Off className="w-3.5 h-3.5 text-slate-500" /> 备用下载地址
                 </label>
-                <textarea
-                  value={addMirror.backupUrlStr}
-                  onChange={(e) => setAddMirror({ ...addMirror, backupUrlStr: e.target.value })}
-                  placeholder="每行一个备用地址&#10;https://mirror1.example.com/file&#10;https://mirror2.example.com/file"
-                  rows={4}
-                  className="input-base resize-none font-mono text-xs"
-                />
+                <div className="space-y-2">
+                  {addMirror.backupEntries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const next = [...addMirror.backupEntries];
+                          next[idx] = { ...next[idx], label: next[idx].label === 'primary' ? 'backup' : 'primary' };
+                          setAddMirror({ ...addMirror, backupEntries: next });
+                        }}
+                        className={cn(
+                          'flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium border transition-all',
+                          entry.label === 'primary'
+                            ? 'bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan'
+                            : 'bg-bg-700/50 border-white/10 text-slate-400'
+                        )}
+                      >
+                        {entry.label === 'primary' ? <Star className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                        {entry.label === 'primary' ? '主用' : '备用'}
+                      </button>
+                      <input
+                        type="url"
+                        value={entry.url}
+                        onChange={(e) => {
+                          const next = [...addMirror.backupEntries];
+                          next[idx] = { ...next[idx], url: e.target.value };
+                          setAddMirror({ ...addMirror, backupEntries: next });
+                        }}
+                        placeholder="https://..."
+                        className="input-base flex-1 !text-xs font-mono"
+                      />
+                      <button
+                        onClick={() => {
+                          const next = addMirror.backupEntries.filter((_, i) => i !== idx);
+                          setAddMirror({ ...addMirror, backupEntries: next });
+                        }}
+                        className="flex-shrink-0 text-danger hover:text-red-400 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setAddMirror({
+                        ...addMirror,
+                        backupEntries: [...addMirror.backupEntries, { url: '', label: 'backup' }],
+                      });
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-neon-cyan hover:text-neon-cyan/80 transition-colors py-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />添加备用地址
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-white/5">

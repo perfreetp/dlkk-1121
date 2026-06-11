@@ -56,12 +56,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ driverId, mirrorId, enabled }),
       }),
-    updateMirror: (driverId: string, mirrorId: string, data: { name?: string; url?: string; speed?: number | null; backupUrls?: string[] }) =>
+    updateMirror: (driverId: string, mirrorId: string, data: { name?: string; url?: string; speed?: number | null; backupUrls?: any[] }) =>
       request('/admin/mirrors/update', {
         method: 'POST',
         body: JSON.stringify({ driverId, mirrorId, ...data }),
       }),
-    addMirror: (driverId: string, data: { name: string; url: string; speed?: number; backupUrls?: string[] }) =>
+    addMirror: (driverId: string, data: { name: string; url: string; speed?: number; backupUrls?: any[] }) =>
       request('/admin/mirrors/add', {
         method: 'POST',
         body: JSON.stringify({ driverId, ...data }),

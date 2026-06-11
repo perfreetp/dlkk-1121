@@ -84,50 +84,65 @@ export default function DriverDetail() {
     let level: CompatLevel = 'excellent';
     const gpu = allGpus.find(g => g.id === compatGpuId);
     const gpuSupported = driver.gpuIds.includes(compatGpuId);
-    const osSupported = driver.osSupport.some(s => s.toLowerCase().includes(compatOs.toLowerCase().split(' ')[0]));
+    const osSupported = driver.osSupport.includes(compatOs);
+    const osPartial = !osSupported && driver.osSupport.some(s => {
+      const v1 = compatOs.match(/Windows\s+(\d+)/)?.[1];
+      const v2 = s.match(/Windows\s+(\d+)/)?.[1];
+      return v1 && v2 && v1 === v2;
+    });
 
     if (!gpuSupported) {
       level = 'incompatible';
-      reasons.push(`此版本驱动不支持 ${gpu?.name || '该显卡'}（适配列表中未包含此型号）`);
-      suggestions.push('请检查显卡型号是否正确，或返回型号库选择对应驱动');
+      reasons.push(`[显卡不兼容] ${gpu?.name || '该显卡'} 不在此驱动适配列表中`);
+      suggestions.push('请确认显卡型号是否正确，或返回型号库查找对应驱动');
     }
     if (!osSupported) {
-      if (level !== 'incompatible') level = 'warning';
-      reasons.push(`${compatOs} 不在此驱动支持的系统列表中`);
-      suggestions.push('选择支持的系统版本，或尝试安装兼容模式运行（可能不稳定）');
+      if (osPartial) {
+        if (level !== 'incompatible') level = 'warning';
+        reasons.push(`[系统版本不匹配] ${compatOs} 不在支持列表，此驱动仅支持：${driver.osSupport.join('、')}`);
+        suggestions.push('此系统版本与驱动不匹配，强行安装可能导致蓝屏或功能异常');
+        suggestions.push('建议选择支持当前系统的驱动版本');
+      } else {
+        if (level !== 'incompatible') level = 'incompatible';
+        reasons.push(`[系统不支持] ${compatOs} 与此驱动完全不兼容，此驱动仅支持：${driver.osSupport.join('、')}`);
+        suggestions.push('当前系统无法安装此驱动，请选择支持当前系统的版本');
+      }
+    }
+    if (!driver.isWHQL) {
+      if (level === 'excellent') level = 'warning';
+      reasons.push('[Beta 风险] 此版本为 Beta 测试版，未经 WHQL 认证，可能存在蓝屏、卡顿等稳定性问题');
+      suggestions.push('如遇问题可进入安全模式卸载，或回退到上一版 WHQL 正式版驱动');
+      suggestions.push('不建议在生产环境或主力机型上安装 Beta 驱动');
     }
 
     if (gpuSupported && osSupported) {
       if (driver.isWHQL) {
-        reasons.push('驱动已通过微软 WHQL 认证，稳定性有保障');
-        reasons.push(`显卡型号 ${gpu?.name || ''} 在官方适配列表中`);
-        reasons.push(`完全支持 ${compatOs} 系统`);
+        reasons.push(`[显卡兼容] ${gpu?.name || ''} 在官方适配列表中，可正常使用`);
+        reasons.push(`[系统兼容] ${compatOs} 在支持列表中，完全兼容`);
+        reasons.push('[WHQL 认证] 已通过微软 WHQL 认证，稳定性和兼容性有保障');
       } else {
-        level = 'warning';
-        reasons.push('此版本为 Beta 测试版，可能存在稳定性问题');
-        reasons.push(`显卡型号 ${gpu?.name || ''} 在适配列表中`);
-        reasons.push(`完全支持 ${compatOs} 系统`);
-        suggestions.push('如遇到问题，建议回退到上一版 WHQL 正式版驱动');
+        reasons.push(`[显卡兼容] ${gpu?.name || ''} 在适配列表中`);
+        reasons.push(`[系统兼容] ${compatOs} 在支持列表中`);
       }
       if (driver.rating >= 4.5) {
-        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分（${driver.ratingCount} 人评价），口碑极佳`);
+        reasons.push(`[用户口碑] 评分 ${driver.rating.toFixed(1)} 分（${driver.ratingCount} 人评价），口碑极佳`);
       } else if (driver.rating >= 4.0) {
-        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分，整体评价良好`);
+        reasons.push(`[用户口碑] 评分 ${driver.rating.toFixed(1)} 分，整体评价良好`);
       } else {
         if (level === 'excellent') level = 'good';
-        reasons.push(`用户评分 ${driver.rating.toFixed(1)} 分，建议安装前查看用户评论`);
+        reasons.push(`[用户口碑] 评分 ${driver.rating.toFixed(1)} 分偏低，建议安装前查看用户评论`);
         suggestions.push('先查看页面下方的用户评论，了解实际使用反馈');
       }
       if (historyDrivers.length > 1 && historyDrivers[0]?.id === driver.id) {
-        reasons.push('此为当前显卡的最新版本驱动，包含最新功能与性能优化');
+        reasons.push('[最新版本] 此为当前显卡的最新版驱动，包含最新功能与性能优化');
       }
     }
 
     const titles: Record<CompatLevel, string> = {
       excellent: '强烈推荐安装',
       good: '推荐安装',
-      warning: '谨慎安装，建议先查看说明',
-      incompatible: '不推荐安装，存在兼容性问题',
+      warning: '谨慎安装，存在风险',
+      incompatible: '不建议安装，存在兼容性问题',
     };
     if (suggestions.length === 0 && gpuSupported && osSupported) {
       suggestions.push('安装前建议先备份旧驱动，以便需要时回退');

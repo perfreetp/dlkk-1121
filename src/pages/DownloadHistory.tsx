@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import {
   Download, Inbox, Play, RotateCcw, Trash2, Home, AlertTriangle, Clock,
   CheckCircle, XCircle, Pause, ChevronDown, ChevronUp, ExternalLink,
-  Hash, HardDrive, Monitor, AlertCircle, Copy, Check, Server
+  Hash, HardDrive, Monitor, AlertCircle, Copy, Check, Server,
+  ArrowUpToLine, ArrowDownToLine, ListOrdered
 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { api } from '@/utils/api';
@@ -12,6 +13,7 @@ import type { DownloadStatus, DownloadRecord } from '@/types';
 import Badge from '@/components/Badge';
 
 type FilterTab = 'all' | DownloadStatus;
+type ViewMode = 'list' | 'queue';
 
 const FILTER_TABS: { key: FilterTab; label: string; icon: any }[] = [
   { key: 'all', label: '全部', icon: Download },
@@ -22,17 +24,27 @@ const FILTER_TABS: { key: FilterTab; label: string; icon: any }[] = [
   { key: 'canceled', label: '已取消', icon: XCircle },
 ];
 
+const QUEUE_STATUS_ORDER: Record<string, number> = {
+  downloading: 0,
+  paused: 1,
+  failed: 2,
+  canceled: 3,
+  completed: 4,
+};
+
 export default function DownloadHistory() {
   const {
-    downloads, fetchDownloads, updateDownloadProgress,
+    downloads, fetchDownloads, enrichDownloads, updateDownloadProgress,
     pauseDownload, resumeDownload, cancelDownload, retryDownload,
+    moveDownloadTop, moveDownloadBottom,
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDownloads();
+    fetchDownloads().then(function() { enrichDownloads(); });
   }, [fetchDownloads]);
 
   useEffect(() => {
@@ -54,10 +66,17 @@ export default function DownloadHistory() {
     });
   }, []);
 
+  const queueItems = useMemo(() => {
+    return [...downloads]
+      .filter(d => d.status !== 'completed')
+      .sort((a, b) => (QUEUE_STATUS_ORDER[a.status] || 9) - (QUEUE_STATUS_ORDER[b.status] || 9));
+  }, [downloads]);
+
   const filteredDownloads = useMemo(() => {
-    if (activeTab === 'all') return downloads;
-    return downloads.filter(d => d.status === activeTab);
-  }, [downloads, activeTab]);
+    if (activeTab === 'all') return viewMode === 'queue' ? queueItems : downloads;
+    const source = viewMode === 'queue' ? queueItems : downloads;
+    return source.filter(d => d.status === activeTab);
+  }, [downloads, activeTab, viewMode, queueItems]);
 
   const pendingCount = useMemo(
     () => downloads.filter(d => d.status === 'downloading' || d.status === 'failed' || d.status === 'paused').length,
@@ -87,7 +106,8 @@ export default function DownloadHistory() {
   };
 
   const handleResumeAll = () => {
-    downloads
+    const items = viewMode === 'queue' ? queueItems : downloads;
+    items
       .filter(d => d.status === 'paused' || d.status === 'failed')
       .forEach(d => d.status === 'failed' ? retryDownload(d.id) : resumeDownload(d.id));
   };
@@ -106,6 +126,120 @@ export default function DownloadHistory() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const renderDetailPanel = (item: DownloadRecord) => {
+    const mirrorName = item.mirrorName || '—';
+    const mirrorUrl = item.mirrorUrl;
+    const gpuNames = item.gpuNames || [];
+    const osSupport = item.osSupport || [];
+    const md5 = item.md5;
+    const sha256 = item.sha256;
+    const installNotes = item.installNotes || [];
+
+    return (
+      <div className="border-t border-white/5 p-4 bg-bg-800/30 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                <Server className="w-3 h-3" /> 来源镜像
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="cyan">{mirrorName}</Badge>
+                {mirrorUrl && (
+                  <a href={mirrorUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-slate-400 hover:text-neon-cyan truncate max-w-xs inline-flex items-center gap-1">
+                    {truncateHash(mirrorUrl, 20, 20)}
+                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {osSupport.length > 0 && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                  <Monitor className="w-3 h-3" /> 支持系统
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {osSupport.map(os => (
+                    <Badge key={os} variant="info" className="text-[10px]">{os}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                <HardDrive className="w-3 h-3" /> 适配显卡 ({gpuNames.length || '—'})
+              </div>
+              {gpuNames.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {gpuNames.map((name, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded bg-bg-700 text-slate-300 border border-white/5">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-xs text-slate-500">暂无数据</span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {md5 && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                  <Hash className="w-3 h-3" /> MD5 校验码
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono text-slate-300 bg-bg-900/50 px-3 py-1.5 rounded border border-white/5 truncate">
+                    {md5}
+                  </code>
+                  <button onClick={() => handleCopy(md5, `${item.id}-md5`)} className="btn-ghost !py-1 !px-2">
+                    {copied === `${item.id}-md5` ? <Check className="w-3 h-3 text-whql" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {sha256 && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                  <Hash className="w-3 h-3" /> SHA256 校验码
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono text-slate-300 bg-bg-900/50 px-3 py-1.5 rounded border border-white/5 truncate">
+                    {truncateHash(sha256, 16, 16)}
+                  </code>
+                  <button onClick={() => handleCopy(sha256, `${item.id}-sha256`)} className="btn-ghost !py-1 !px-2">
+                    {copied === `${item.id}-sha256` ? <Check className="w-3 h-3 text-whql" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {installNotes.length > 0 && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> 安装提示
+                </div>
+                <ol className="space-y-1.5">
+                  {installNotes.map((note, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                      <span className="flex-shrink-0 w-4 h-4 rounded bg-warn/20 text-warn flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (downloads.length === 0) {
@@ -139,7 +273,21 @@ export default function DownloadHistory() {
               <p className="text-sm text-slate-400">管理你的所有驱动下载任务</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="flex bg-bg-700/50 rounded-lg border border-white/10 p-0.5">
+              <button onClick={() => setViewMode('list')} className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1',
+                viewMode === 'list' ? 'bg-neon-cyan/15 text-neon-cyan' : 'text-slate-400 hover:text-white'
+              )}>
+                <Download className="w-3.5 h-3.5" /> 列表
+              </button>
+              <button onClick={() => setViewMode('queue')} className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1',
+                viewMode === 'queue' ? 'bg-neon-cyan/15 text-neon-cyan' : 'text-slate-400 hover:text-white'
+              )}>
+                <ListOrdered className="w-3.5 h-3.5" /> 队列
+              </button>
+            </div>
             {stats.downloading > 0 && (
               <button onClick={handlePauseAll} className="btn-ghost text-sm">
                 <Pause className="w-4 h-4" /> 全部暂停
@@ -157,7 +305,7 @@ export default function DownloadHistory() {
           {FILTER_TABS.map(tab => {
             const Icon = tab.icon;
             const count = tab.key === 'all'
-              ? downloads.length
+              ? (viewMode === 'queue' ? queueItems.length : downloads.length)
               : downloads.filter(d => d.status === tab.key).length;
             if (tab.key !== 'all' && count === 0) return null;
             return (
@@ -204,16 +352,22 @@ export default function DownloadHistory() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredDownloads.map(item => {
+            {filteredDownloads.map((item, index) => {
               const statusInfo = DOWNLOAD_STATUS_MAP[item.status];
               const speed = item.status === 'downloading'
                 ? `${(Math.random() * 5 + 1).toFixed(1)} MB/s`
                 : '-';
               const isExpanded = expandedIds.has(item.id);
+              const isQueued = viewMode === 'queue' && item.status !== 'completed';
               return (
                 <div key={item.id} className={cn('card card-hover overflow-hidden', isExpanded && 'ring-1 ring-neon-cyan/30')}>
                   <div className="p-4">
                     <div className="flex items-start gap-4 flex-col md:flex-row md:items-center">
+                      {isQueued && (
+                        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-neon-cyan/10 text-neon-cyan flex items-center justify-center text-xs font-bold border border-neon-cyan/30">
+                          {index + 1}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-white truncate">{item.driverName}</h3>
@@ -259,24 +413,21 @@ export default function DownloadHistory() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         {item.status === 'downloading' && (
                           <>
                             <button onClick={() => pauseDownload(item.id)} className="btn-ghost text-sm px-3 py-1.5" title="暂停">
-                              <Pause className="w-4 h-4" />
-                              暂停
+                              <Pause className="w-4 h-4" />暂停
                             </button>
                             <button onClick={() => cancelDownload(item.id)} className="btn-danger text-sm px-3 py-1.5" title="取消">
-                              <XCircle className="w-4 h-4" />
-                              取消
+                              <XCircle className="w-4 h-4" />取消
                             </button>
                           </>
                         )}
                         {item.status === 'paused' && (
                           <>
                             <button onClick={() => resumeDownload(item.id)} className="btn-primary text-sm px-3 py-1.5" title="继续">
-                              <Play className="w-4 h-4" />
-                              继续
+                              <Play className="w-4 h-4" />继续
                             </button>
                             <button onClick={() => cancelDownload(item.id)} className="btn-danger text-sm px-3 py-1.5" title="取消">
                               <XCircle className="w-4 h-4" />
@@ -285,15 +436,23 @@ export default function DownloadHistory() {
                         )}
                         {item.status === 'failed' && (
                           <button onClick={() => retryDownload(item.id)} className="btn-primary text-sm px-3 py-1.5" title="重试">
-                            <RotateCcw className="w-4 h-4" />
-                            重试
+                            <RotateCcw className="w-4 h-4" />重试
                           </button>
                         )}
                         {item.status === 'canceled' && (
                           <button onClick={() => retryDownload(item.id)} className="btn-ghost text-sm px-3 py-1.5" title="重新下载">
-                            <RotateCcw className="w-4 h-4" />
-                            重新下载
+                            <RotateCcw className="w-4 h-4" />重新下载
                           </button>
+                        )}
+                        {isQueued && (item.status === 'downloading' || item.status === 'paused' || item.status === 'failed') && (
+                          <>
+                            <button onClick={() => moveDownloadTop(item.id)} className="btn-ghost text-sm !px-2 !py-1.5" title="置顶">
+                              <ArrowUpToLine className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => moveDownloadBottom(item.id)} className="btn-ghost text-sm !px-2 !py-1.5" title="移到底部">
+                              <ArrowDownToLine className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
                         <button onClick={() => toggleExpand(item.id)} className="btn-ghost text-sm px-3 py-1.5" title="详情">
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -305,110 +464,7 @@ export default function DownloadHistory() {
                       </div>
                     </div>
                   </div>
-
-                  {isExpanded && (
-                    <div className="border-t border-white/5 p-4 bg-bg-800/30 space-y-4">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          {item.mirrorName && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <Server className="w-3 h-3" /> 来源镜像
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="cyan">{item.mirrorName}</Badge>
-                                {item.mirrorUrl && (
-                                  <a href={item.mirrorUrl} target="_blank" rel="noopener noreferrer"
-                                    className="text-xs text-slate-400 hover:text-neon-cyan truncate max-w-xs inline-flex items-center gap-1">
-                                    {truncateHash(item.mirrorUrl, 20, 20)}
-                                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {item.osSupport && item.osSupport.length > 0 && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <Monitor className="w-3 h-3" /> 支持系统
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {item.osSupport.map(os => (
-                                  <Badge key={os} variant="info" className="text-[10px]">{os}</Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {item.gpuNames && item.gpuNames.length > 0 && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <HardDrive className="w-3 h-3" /> 适配显卡 ({item.gpuNames.length})
-                              </div>
-                              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                                {item.gpuNames.map((name, i) => (
-                                  <span key={i} className="text-xs px-2 py-0.5 rounded bg-bg-700 text-slate-300 border border-white/5">
-                                    {name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-3">
-                          {item.md5 && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <Hash className="w-3 h-3" /> MD5 校验码
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <code className="flex-1 text-xs font-mono text-slate-300 bg-bg-900/50 px-3 py-1.5 rounded border border-white/5 truncate">
-                                  {item.md5}
-                                </code>
-                                <button onClick={() => handleCopy(item.md5!, `${item.id}-md5`)} className="btn-ghost !py-1 !px-2">
-                                  {copied === `${item.id}-md5` ? <Check className="w-3 h-3 text-whql" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {item.sha256 && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <Hash className="w-3 h-3" /> SHA256 校验码
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <code className="flex-1 text-xs font-mono text-slate-300 bg-bg-900/50 px-3 py-1.5 rounded border border-white/5 truncate">
-                                  {truncateHash(item.sha256, 16, 16)}
-                                </code>
-                                <button onClick={() => handleCopy(item.sha256!, `${item.id}-sha256`)} className="btn-ghost !py-1 !px-2">
-                                  {copied === `${item.id}-sha256` ? <Check className="w-3 h-3 text-whql" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {item.installNotes && item.installNotes.length > 0 && (
-                            <div>
-                              <div className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" /> 安装提示
-                              </div>
-                              <ol className="space-y-1.5">
-                                {item.installNotes.map((note, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                                    <span className="flex-shrink-0 w-4 h-4 rounded bg-warn/20 text-warn flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
-                                    <span>{note}</span>
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {isExpanded && renderDetailPanel(item)}
                 </div>
               );
             })}

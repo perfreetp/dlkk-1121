@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import type { Driver } from '../../shared/types';
+import type { Driver, BackupUrl } from '../../shared/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +16,7 @@ const getDrivers = (): Driver[] => {
 };
 
 const saveDrivers = (data: Driver[]) => {
-  fs.writeFileSync(DRIVERS_PATH, JSON.stringify(data, null, 2));
+  fs.writeFileSync(DRIVERS_PATH, JSON.stringify(data, null, 2), 'utf-8');
 };
 
 router.get('/pending-drivers', (_req: Request, res: Response) => {
@@ -89,18 +89,22 @@ router.post('/mirrors/update', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Mirror not found' });
     return;
   }
-  if (name !== undefined) drivers[dIdx].mirrors[mIdx].name = String(name);
-  if (url !== undefined) drivers[dIdx].mirrors[mIdx].url = String(url);
+  if (name !== undefined) drivers[dIdx].mirrors[mIdx].name = name;
+  if (url !== undefined) drivers[dIdx].mirrors[mIdx].url = url;
   if (speed !== undefined && speed !== null && speed !== '') {
     const s = Number(speed);
     if (!isNaN(s)) drivers[dIdx].mirrors[mIdx].speed = s;
     else delete (drivers[dIdx].mirrors[mIdx] as any).speed;
+  } else if (speed === '' || speed === null) {
+    delete (drivers[dIdx].mirrors[mIdx] as any).speed;
   }
   if (backupUrls !== undefined) {
-    if (Array.isArray(backupUrls)) {
-      const filtered = backupUrls.map(u => String(u)).filter(Boolean);
-      if (filtered.length > 0) drivers[dIdx].mirrors[mIdx].backupUrls = filtered;
-      else delete (drivers[dIdx].mirrors[mIdx] as any).backupUrls;
+    if (Array.isArray(backupUrls) && backupUrls.length > 0) {
+      const parsed: BackupUrl[] = backupUrls.map((u: any) => {
+        if (typeof u === 'string') return { url: u, label: 'backup' as const };
+        return { url: String(u.url || ''), label: (u.label === 'primary' ? 'primary' : 'backup') as 'primary' | 'backup' };
+      }).filter((u: BackupUrl) => u.url);
+      drivers[dIdx].mirrors[mIdx].backupUrls = parsed;
     } else {
       delete (drivers[dIdx].mirrors[mIdx] as any).backupUrls;
     }
@@ -130,17 +134,20 @@ router.post('/mirrors/add', (req: Request, res: Response) => {
   }
   const newMirror: any = {
     id: newId,
-    name: String(name),
-    url: String(url),
+    name: name,
+    url: url,
     enabled: true,
   };
   if (speed !== undefined && speed !== null && speed !== '') {
     const s = Number(speed);
     if (!isNaN(s)) newMirror.speed = s;
   }
-  if (backupUrls && Array.isArray(backupUrls)) {
-    const filtered = backupUrls.map(u => String(u)).filter(Boolean);
-    if (filtered.length > 0) newMirror.backupUrls = filtered;
+  if (backupUrls && Array.isArray(backupUrls) && backupUrls.length > 0) {
+    const parsed: BackupUrl[] = backupUrls.map((u: any) => {
+      if (typeof u === 'string') return { url: u, label: 'backup' as const };
+      return { url: String(u.url || ''), label: (u.label === 'primary' ? 'primary' : 'backup') as 'primary' | 'backup' };
+    }).filter((u: BackupUrl) => u.url);
+    if (parsed.length > 0) newMirror.backupUrls = parsed;
   }
   drivers[dIdx].mirrors.push(newMirror);
   saveDrivers(drivers);

@@ -13,13 +13,18 @@ export interface GpuModel {
   image?: string;
 }
 
+export interface BackupUrl {
+  url: string;
+  label: 'primary' | 'backup';
+}
+
 export interface MirrorSource {
   id: string;
   name: string;
   url: string;
   enabled: boolean;
   speed?: number;
-  backupUrls?: string[];
+  backupUrls?: BackupUrl[];
 }
 
 export interface Driver {

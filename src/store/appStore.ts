@@ -17,6 +17,7 @@ interface AppState {
   fetchFavorites: () => Promise<void>;
   toggleFavorite: (driverId: string) => Promise<void>;
   fetchDownloads: () => Promise<void>;
+  enrichDownloads: () => Promise<void>;
   startDownload: (driver: Driver, mirrorId: string) => Promise<void>;
   batchStartDownload: (gpuIds: string[]) => Promise<number>;
   updateDownloadProgress: (id: string, progress: number, status?: DownloadRecord['status']) => Promise<void>;
@@ -24,6 +25,8 @@ interface AppState {
   resumeDownload: (id: string) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
   retryDownload: (id: string) => Promise<void>;
+  moveDownloadTop: (id: string) => void;
+  moveDownloadBottom: (id: string) => void;
   toggleDriverSelection: (driverId: string) => void;
   clearSelection: () => void;
   batchSelect: (ids: string[]) => void;
@@ -58,6 +61,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const data = await api.downloads.list() as DownloadRecord[];
       set({ downloads: data });
+    } catch (e) { console.error(e); }
+  },
+
+  enrichDownloads: async () => {
+    try {
+      const current = get().downloads;
+      const needsEnrich = current.filter(d =>
+        !d.mirrorName || !d.gpuNames || !d.md5 || !d.installNotes
+      );
+      if (needsEnrich.length === 0) return;
+      const allDrivers = await api.drivers.list({ status: 'approved' }) as Driver[];
+      let changed = false;
+      const updated = current.map(d => {
+        if (d.mirrorName && d.gpuNames && d.md5 && d.installNotes) return d;
+        const driver = allDrivers.find(function(dr) { return dr.id === d.driverId; });
+        if (!driver) return d;
+        changed = true;
+        const mirror = driver.mirrors.find(function(m) { return m.id === d.mirrorId; });
+        const patch: any = {};
+        if (!d.mirrorName && mirror) patch.mirrorName = mirror.name;
+        if (!d.mirrorUrl && mirror) patch.mirrorUrl = mirror.url;
+        if (!d.gpuNames && driver.gpuNames) patch.gpuNames = driver.gpuNames;
+        if (!d.md5) patch.md5 = driver.md5;
+        if (!d.sha256) patch.sha256 = driver.sha256;
+        if (!d.osSupport) patch.osSupport = driver.osSupport;
+        if (!d.installNotes) patch.installNotes = DEFAULT_INSTALL_NOTES;
+        const merged = { ...d, ...patch };
+        api.downloads.update(d.id, patch).catch(function() {});
+        return merged;
+      });
+      if (changed) set({ downloads: updated });
     } catch (e) { console.error(e); }
   },
 
@@ -189,6 +223,26 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
       setTimeout(function() { simulate(id, 0); }, 1000);
     } catch (e) { console.error(e); }
+  },
+
+  moveDownloadTop: (id: string) => {
+    const list = get().downloads;
+    const idx = list.findIndex(function(d) { return d.id === id; });
+    if (idx <= 0) return;
+    const item = list[idx];
+    const next = list.filter(function(d) { return d.id !== id; });
+    next.unshift(item);
+    set({ downloads: next });
+  },
+
+  moveDownloadBottom: (id: string) => {
+    const list = get().downloads;
+    const idx = list.findIndex(function(d) { return d.id === id; });
+    if (idx < 0 || idx === list.length - 1) return;
+    const item = list[idx];
+    const next = list.filter(function(d) { return d.id !== id; });
+    next.push(item);
+    set({ downloads: next });
   },
 
   toggleDriverSelection: (driverId: string) => {
